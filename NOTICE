@@ -1,0 +1,12 @@
+cookidoo-axi is an independent, unofficial interoperability tool. It is not
+affiliated with, endorsed by, sponsored by, or supported by Vorwerk,
+Thermomix, or Cookidoo. Cookidoo and Thermomix are registered trademarks of
+their respective owner.
+
+The API model is derived from the separately maintained MIT-licensed
+`cookidoo-openapi` project. The browser-cookie login design was informed by the
+MIT-licensed `@recode-software/cookidoo-api` project; `cookidoo-axi` uses its
+own safety-hardened implementation.
+
+The full license notice for the generated API model is reproduced in
+`THIRD_PARTY_NOTICES.md` and is included in every release archive.

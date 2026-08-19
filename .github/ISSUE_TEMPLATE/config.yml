@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Vorwerk security reporting
+    url: https://www.vorwerk.com/gb/en/c/home/footer/privacy-policy
+    about: Report suspected Cookidoo or Vorwerk service vulnerabilities to the service owner, not this repository.

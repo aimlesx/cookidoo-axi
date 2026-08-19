@@ -1,0 +1,6295 @@
+{
+  "generatedFrom": "cookidoo-openapi/openapi.yaml",
+  "openapi": "3.1.1",
+  "apiVersion": "0.2.0",
+  "server": "https://cookidoo.pl",
+  "authentication": {
+    "status": "partial",
+    "documentation": "docs/authentication.md",
+    "evidence": [
+      {
+        "source": "oidc-discovery-2026-08-16",
+        "supports": [
+          "oidc-capabilities"
+        ]
+      },
+      {
+        "source": "external-clients-2026-08-17",
+        "supports": [
+          "redirect-flow",
+          "cookie-session"
+        ]
+      },
+      {
+        "source": "authenticated-ui-2026-08-17",
+        "supports": [
+          "form-behavior",
+          "csrf-observations"
+        ]
+      }
+    ],
+    "loginEntryPoint": "/profile/{lang}/login",
+    "redirectParameter": "redirectAfterLogin",
+    "oidcDiscovery": "https://ciam.prod.cookidoo.vorwerk-digital.com/.well-known/openid-configuration",
+    "firstPartyFlow": {
+      "protocol": "authorization-code",
+      "pkce": "corroborated",
+      "browserRedirects": true,
+      "loginForm": {
+        "action": "dynamic-first-party-action",
+        "contentType": "application/x-www-form-urlencoded",
+        "fields": [
+          "requestId",
+          "username",
+          "password"
+        ]
+      },
+      "callback": "/oauth2/callback"
+    },
+    "marketApiSession": {
+      "mechanism": "cookie-jar",
+      "completeCookieSet": "unknown",
+      "knownSessionCookie": "_oauth2_proxy",
+      "uiMarkerCookie": "v-authenticated"
+    },
+    "logout": {
+      "uiEntryPoint": "/profile/logout",
+      "completeSequence": "unknown"
+    },
+    "csrf": {
+      "genericRule": "unknown",
+      "xRequestedWith": "observed-ajax-marker",
+      "inspectedGeneralFormsToken": "not-observed",
+      "originOrRefererEnforcement": "unknown",
+      "consentSpecificRule": {
+        "cookie": "csrf_",
+        "header": "X-Csrf-Token",
+        "generalizable": false
+      }
+    }
+  },
+  "protocol": {
+    "status": "partial",
+    "documentation": "docs/protocol-behavior.md",
+    "idempotencyKey": "not-observed",
+    "automaticMutationRetries": "unsafe-without-reconciliation",
+    "publishedRateLimit": "unknown",
+    "retryAfter": "optional-when-present",
+    "conditionalWrites": "not-observed",
+    "concurrencyGuarantee": "unknown"
+  },
+  "compatibilityOverrides": {
+    "responses": {
+      "patchCreatedRecipe": {
+        "200": {
+          "addMediaType": "application/vnd.vorwerk.customer-recipe.full+json",
+          "copySchemaFrom": "application/json",
+          "observedAt": "2026-08-18"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CustomerRecipeId": {
+        "type": "string",
+        "description": "ULID generated for a customer-created recipe.",
+        "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+      },
+      "OpaqueQueryScalar": {
+        "description": "Scalar URI-template value whose concrete type is not verified.",
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      },
+      "SearchFilters": {
+        "type": "object",
+        "description": "Form-exploded filter map. Named properties come from advertised search\nlinks; value delimiters, repetition, enums, units, and ranges remain\nunverified.",
+        "properties": {
+          "tags": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "categories": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "ratings": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "preparationTime": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "portions": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "totalTime": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "tmv": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "countries": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "languages": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "additionalDevices": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "accessories": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "sortby": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "ids": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "ingredients": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "excludeIngredients": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "excludeTags": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "exclude": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          },
+          "like": {
+            "$ref": "#/components/schemas/OpaqueQueryScalar"
+          }
+        },
+        "additionalProperties": {
+          "$ref": "#/components/schemas/OpaqueQueryScalar"
+        }
+      },
+      "RecipeClusterEntryV1": {
+        "type": "object",
+        "required": [
+          "recipe_id",
+          "notation",
+          "quantity",
+          "types"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "recipe_id": {
+            "type": "string"
+          },
+          "notation": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RecipeClusterEntryV2": {
+        "type": "object",
+        "required": [
+          "recipe_id",
+          "notation",
+          "quantity",
+          "types",
+          "languageTag"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "recipe_id": {
+            "type": "string"
+          },
+          "notation": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "languageTag": {
+            "type": "string"
+          }
+        }
+      },
+      "RecipeClusterV1Response": {
+        "type": "array",
+        "description": "Core item fields from a low-volume public cluster read.",
+        "items": {
+          "$ref": "#/components/schemas/RecipeClusterEntryV1"
+        }
+      },
+      "RecipeClusterV2Response": {
+        "type": "array",
+        "description": "V2 adds a language tag to the independently modeled v1 core.",
+        "items": {
+          "$ref": "#/components/schemas/RecipeClusterEntryV2"
+        }
+      },
+      "SearchRecipeCard": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "objectID": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "descriptiveAssets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageAsset"
+            }
+          },
+          "totalTime": {
+            "type": "number"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "numberOfRatings": {
+            "type": "number"
+          },
+          "publishedAt": {
+            "type": "string"
+          }
+        }
+      },
+      "SearchResultResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchRecipeCard"
+            }
+          }
+        }
+      },
+      "IngredientSuggestion": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "highlighted": {
+            "type": "string"
+          },
+          "occurrencesInRecipes": {
+            "type": "number"
+          }
+        }
+      },
+      "IngredientSearchResponse": {
+        "type": "object",
+        "required": [
+          "ingredients"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IngredientSuggestion"
+            }
+          }
+        }
+      },
+      "AggregatedRecipeRating": {
+        "type": "object",
+        "required": [
+          "aggregatedRating",
+          "numberOfRatings",
+          "updatedAt"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "aggregatedRating": {
+            "type": "number"
+          },
+          "numberOfRatings": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        }
+      },
+      "OfficialRecipe": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "recipeIngredientGroups": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "example": {
+          "id": "r123456",
+          "name": "Synthetic recipe",
+          "recipeIngredientGroups": []
+        }
+      },
+      "CreateBlankRecipe": {
+        "type": "object",
+        "required": [
+          "recipeName"
+        ],
+        "properties": {
+          "recipeName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "recipeName": "Synthetic recipe"
+        }
+      },
+      "CopyRecipe": {
+        "type": "object",
+        "required": [
+          "recipeUrl"
+        ],
+        "properties": {
+          "recipeUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "servingSize": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "partnerId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "recipeUrl": "https://example.invalid/synthetic-recipe"
+        }
+      },
+      "CreatedRecipeCreated": {
+        "type": "object",
+        "required": [
+          "recipeId"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "recipeId": {
+            "$ref": "#/components/schemas/CustomerRecipeId"
+          },
+          "parentRecipeId": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "recipeId": "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+        }
+      },
+      "CreatedRecipeSummary": {
+        "type": "object",
+        "required": [
+          "recipeId",
+          "name"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "recipeId": {
+            "$ref": "#/components/schemas/CustomerRecipeId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreatedRecipeListItem": {
+        "type": "object",
+        "required": [
+          "recipeId"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "recipeId": {
+            "$ref": "#/components/schemas/CustomerRecipeId"
+          },
+          "recipeContent": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "CreatedRecipeList": {
+        "description": "Partial list contract; current clients tolerate multiple envelopes.",
+        "oneOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatedRecipeSummary"
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CreatedRecipeListItem"
+                }
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CreatedRecipeSummary"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CreatedRecipe": {
+        "type": "object",
+        "required": [
+          "recipeId",
+          "recipeContent"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "recipeId": {
+            "$ref": "#/components/schemas/CustomerRecipeId"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "parentRecipeId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "workStatus": {
+            "type": "string",
+            "enum": [
+              "PRIVATE",
+              "PUBLIC"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recipeContent": {
+            "$ref": "#/components/schemas/RecipeContent"
+          }
+        },
+        "example": {
+          "recipeId": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+          "status": "PRIVATE",
+          "workStatus": "PRIVATE",
+          "recipeContent": {
+            "name": "Synthetic recipe"
+          }
+        }
+      },
+      "PublicCreatedRecipeContent": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prepTime": {
+            "type": "string"
+          },
+          "totalTime": {
+            "type": "string"
+          },
+          "recipeIngredient": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recipeInstructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recipeYield": {
+            "$ref": "#/components/schemas/RecipeYield"
+          },
+          "tool": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PublicCreatedRecipe": {
+        "type": "object",
+        "required": [
+          "recipeId",
+          "recipeContent"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "recipeId": {
+            "$ref": "#/components/schemas/CustomerRecipeId"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "workStatus": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "modifiedAt": {
+            "type": "string"
+          },
+          "recipeContent": {
+            "$ref": "#/components/schemas/PublicCreatedRecipeContent"
+          }
+        }
+      },
+      "RecipeContent": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Ingredient"
+            }
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Instruction"
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "yield": {
+            "$ref": "#/components/schemas/RecipeYield"
+          },
+          "prepTime": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds"
+          },
+          "totalTime": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds"
+          },
+          "hints": {},
+          "recipeMetadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "CreatedRecipePatch": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "hints": {},
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isImageOwnedByUser": {
+            "type": "boolean"
+          },
+          "isImageCopyrightOwned": {
+            "type": "boolean"
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Ingredient"
+            }
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Instruction"
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "yield": {
+            "$ref": "#/components/schemas/RecipeYield"
+          },
+          "prepTime": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalTime": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "workStatus": {
+            "type": "string",
+            "enum": [
+              "PRIVATE",
+              "PUBLIC"
+            ]
+          },
+          "recipeMetadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "example": {
+          "name": "Synthetic recipe updated"
+        }
+      },
+      "RecipeYield": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "unitText": {
+            "type": "string"
+          }
+        }
+      },
+      "Ingredient": {
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "INGREDIENT"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "Instruction": {
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "STEP"
+          },
+          "text": {
+            "type": "string"
+          },
+          "annotations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "missedUsages": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "MoveRecipe": {
+        "type": "object",
+        "required": [
+          "recipeId",
+          "targetListId",
+          "srcListId",
+          "targetListType",
+          "srcListType"
+        ],
+        "properties": {
+          "recipeId": {
+            "type": "string"
+          },
+          "targetListId": {
+            "type": "string"
+          },
+          "srcListId": {
+            "type": "string"
+          },
+          "targetListType": {
+            "type": "string"
+          },
+          "srcListType": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "recipeId": "r123456",
+          "targetListId": "synthetic-target-list",
+          "srcListId": "synthetic-source-list",
+          "targetListType": "CUSTOM",
+          "srcListType": "CUSTOM"
+        }
+      },
+      "OrganizerRecipe": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "type",
+          "totalTime"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "VORWERK",
+              "CUSTOM"
+            ]
+          },
+          "totalTime": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "OrganizerChapter": {
+        "type": "object",
+        "required": [
+          "title",
+          "recipes"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "recipes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizerRecipe"
+            }
+          }
+        }
+      },
+      "CustomList": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "chapters",
+          "listType",
+          "author"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizerChapter"
+            }
+          },
+          "listType": {
+            "type": "string",
+            "const": "CUSTOMLIST"
+          },
+          "author": {
+            "type": "string"
+          }
+        }
+      },
+      "ManagedList": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "chapters",
+          "listType",
+          "author"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizerChapter"
+            }
+          },
+          "listType": {
+            "type": "string",
+            "const": "MANAGEDLIST"
+          },
+          "author": {
+            "type": "string"
+          }
+        }
+      },
+      "OrganizerPageInfo": {
+        "type": "object",
+        "required": [
+          "totalPages",
+          "totalElements"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalElements": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CustomListPage": {
+        "type": "object",
+        "required": [
+          "customlists",
+          "page"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "customlists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomList"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/OrganizerPageInfo"
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ManagedListPage": {
+        "type": "object",
+        "required": [
+          "managedlists",
+          "page"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "managedlists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagedList"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/OrganizerPageInfo"
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "CustomListMutationResult": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "content": {
+            "$ref": "#/components/schemas/CustomList"
+          }
+        }
+      },
+      "ManagedListMutationResult": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ManagedList"
+          }
+        }
+      },
+      "AddRecipesToDay": {
+        "type": "object",
+        "required": [
+          "recipeIds",
+          "dayKey"
+        ],
+        "properties": {
+          "recipeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "dayKey": {
+            "type": "string",
+            "format": "date"
+          },
+          "recipeSource": {
+            "type": "string",
+            "enum": [
+              "CUSTOMER"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "recipeIds": [
+            "r123456"
+          ],
+          "dayKey": "2026-01-15"
+        }
+      },
+      "ImageAsset": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "square": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "portrait": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "landscape": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PlanningRecipeAssets": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "images": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImageAsset"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "PlanningRecipe": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "totalTime"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "totalTime": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "assets": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlanningRecipeAssets"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "PlanningDay": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "dayKey",
+          "recipes"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "dayKey": {
+            "type": "string",
+            "format": "date"
+          },
+          "recipes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanningRecipe"
+            }
+          },
+          "customerRecipes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanningRecipe"
+            }
+          },
+          "customerRecipeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PlanningWeek": {
+        "type": "object",
+        "required": [
+          "myDays"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "myDays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanningDay"
+            }
+          }
+        }
+      },
+      "PlanningMutationResult": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "content": {
+            "$ref": "#/components/schemas/PlanningDay"
+          }
+        }
+      },
+      "OwnedItemPatch": {
+        "type": "object",
+        "required": [
+          "id",
+          "isOwned"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "isOwned": {
+            "type": "boolean"
+          },
+          "ownedTimestamp": {
+            "type": "integer",
+            "description": "Timestamp unit is not verified."
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "id": "synthetic-item-id",
+          "isOwned": true
+        }
+      },
+      "ShoppingQuantity": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "from": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "to": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      },
+      "ShoppingIngredient": {
+        "type": "object",
+        "required": [
+          "id",
+          "ingredientNotation",
+          "isOwned"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ingredientNotation": {
+            "type": "string"
+          },
+          "isOwned": {
+            "type": "boolean"
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/ShoppingQuantity"
+          },
+          "unitNotation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ShoppingRecipe": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "recipeIngredientGroups"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "recipeIngredientGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShoppingIngredient"
+            }
+          },
+          "descriptiveAssets": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ImageAsset"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AdditionalShoppingItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "isOwned"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isOwned": {
+            "type": "boolean"
+          },
+          "ownedTimestamp": {
+            "type": "integer",
+            "description": "Timestamp unit is not verified."
+          }
+        }
+      },
+      "ShoppingList": {
+        "type": "object",
+        "required": [
+          "recipes",
+          "customerRecipes",
+          "additionalItems"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "recipes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShoppingRecipe"
+            }
+          },
+          "customerRecipes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShoppingRecipe"
+            }
+          },
+          "additionalItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdditionalShoppingItem"
+            }
+          }
+        }
+      },
+      "ShoppingRecipeMutationResult": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShoppingRecipe"
+            }
+          }
+        }
+      },
+      "ShoppingIngredientMutationResult": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShoppingIngredient"
+            }
+          }
+        }
+      },
+      "AdditionalShoppingItemsMutationResult": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdditionalShoppingItem"
+            }
+          }
+        }
+      },
+      "RecipeNote": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "CommunityUserInfo": {
+        "type": "object",
+        "required": [
+          "username"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "picture": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pictureTemplate": {
+            "type": "string"
+          }
+        }
+      },
+      "CommunityProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "userInfo"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userInfo": {
+            "$ref": "#/components/schemas/CommunityUserInfo"
+          }
+        }
+      },
+      "CommunityProfileUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "food-preferences": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "accessories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "food-preferences"
+            ]
+          },
+          {
+            "required": [
+              "accessories"
+            ]
+          }
+        ]
+      },
+      "Subscription": {
+        "type": "object",
+        "required": [
+          "active",
+          "expires",
+          "startDate",
+          "status",
+          "subscriptionLevel",
+          "subscriptionSource",
+          "type",
+          "extendedType"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "expires": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subscriptionLevel": {
+            "type": "string"
+          },
+          "subscriptionSource": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "extendedType": {
+            "type": "string"
+          }
+        }
+      },
+      "SubscriptionList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Subscription"
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "status": {
+            "type": "integer"
+          },
+          "statusCode": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": 400,
+          "title": "Synthetic error"
+        }
+      },
+      "UnknownJson": {
+        "description": "Deliberately unconstrained JSON. No object shape is asserted."
+      },
+      "FeedLimit": {
+        "type": "string",
+        "enum": [
+          "small",
+          "medium",
+          "large"
+        ],
+        "default": "medium"
+      },
+      "FeedBootstrap": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Partial independently expressed collection bootstrap shape.",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnknownJson"
+            }
+          },
+          "_links": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "example": {
+          "items": [],
+          "_links": {}
+        }
+      },
+      "FeedPage": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "Partial independently expressed collection feed page shape.",
+        "properties": {
+          "lastItemULID": {
+            "$ref": "#/components/schemas/CustomerRecipeId"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnknownJson"
+            }
+          },
+          "_links": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "example": {
+          "lastItemULID": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+          "items": [],
+          "_links": {}
+        }
+      }
+    },
+    "responses": {
+      "EmptySuccess": {
+        "description": "Successful response with no required body."
+      },
+      "Error": {
+        "description": "Error response. The gateway may return JSON problem details or HTML.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          },
+          "text/html": {
+            "schema": {
+              "type": "string"
+            }
+          },
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "example": {
+              "status": 400,
+              "title": "Synthetic error"
+            }
+          }
+        }
+      },
+      "UnknownJsonSuccess": {
+        "description": "Successful JSON response whose top-level shape has not been safely verified.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UnknownJson"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "cookieSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "_oauth2_proxy",
+        "description": "Partial representation of the first-party browser session. A current\nclient also preserves `v-authenticated`, but that client-readable marker\nis not treated as an authentication credential. The complete cookie jar,\nattributes, renewal, and CSRF requirements remain unknown. Never paste\nlive values into hosted documentation, generators, issues, or third-party\ntools."
+      },
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Authentication declared by the advertised collection-feed specification; credentials are not documented here."
+      }
+    }
+  },
+  "operations": [
+    {
+      "operationId": "getRecipe",
+      "command": [
+        "recipe",
+        "get"
+      ],
+      "tag": "Recipes",
+      "method": "GET",
+      "path": "/recipes/recipe/{lang}/{recipeId}",
+      "summary": "Get an official recipe",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "recipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^r[0-9]+$"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Full recipe representation; exact fields vary by recipe and device generation.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficialRecipe"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "public",
+      "status": "corroborated",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getRecipeCluster",
+      "command": [
+        "recipe",
+        "variants"
+      ],
+      "tag": "Recipes",
+      "method": "GET",
+      "path": "/recipes/cluster/{clusterId}",
+      "summary": "Get variants in a recipe cluster",
+      "description": "Legacy compatibility route advertised by HAL discovery. A public\nsynthetic miss confirmed an unauthenticated JSON array response. A\nlow-volume public read of a non-empty cluster linked from an official\nrecipe confirmed the modeled core item fields; other cluster variants\nand optional fields remain partial.",
+      "parameters": [
+        {
+          "name": "clusterId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Recipe cluster array with observed core item fields; additional variants remain partial.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeClusterV1Response"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "public",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getRecipeClusterV2",
+      "command": [
+        "recipe",
+        "variants-v2"
+      ],
+      "tag": "Recipes",
+      "method": "GET",
+      "path": "/recipes/cluster/2/{clusterId}",
+      "summary": "Get variants in a recipe cluster (v2)",
+      "description": "Separately advertised v2 compatibility route. Public empty and\nnon-empty reads confirmed the same top-level array kind as v1 and the\nmodeled core fields, including `languageTag`; other cluster variants\nand optional fields remain partial.",
+      "parameters": [
+        {
+          "name": "clusterId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Recipe cluster array with observed core item fields; additional variants remain partial.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeClusterV2Response"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "public",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "search",
+      "command": [
+        "search",
+        "recipes"
+      ],
+      "tag": "Search",
+      "method": "GET",
+      "path": "/search/api/{lang}/search",
+      "summary": "Search recipes and collections",
+      "description": "Advertised legacy API route. The current web search uses a different\nclient-side search backend. A public synthetic miss confirmed a JSON\nobject with a `data` array, while result items, filters, and pagination\nremain partial. `filters*` is modeled as an exploded map because the RFC\n6570 template does not advertise repeated `filters=` array values.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "context",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "filters",
+          "in": "query",
+          "required": false,
+          "description": "Exploded service-specific filter map; value grammar is not verified.",
+          "schema": {
+            "type": "object",
+            "description": "Form-exploded filter map. Named properties come from advertised search\nlinks; value delimiters, repetition, enums, units, and ranges remain\nunverified.",
+            "properties": {
+              "tags": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "categories": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ratings": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "preparationTime": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "portions": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "difficulty": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "totalTime": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "tmv": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "countries": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "languages": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "additionalDevices": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "accessories": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "sortby": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ids": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ingredients": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "excludeIngredients": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "excludeTags": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "exclude": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "like": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              }
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OpaqueQueryScalar"
+            }
+          }
+        },
+        {
+          "name": "focus",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "pagination",
+          "in": "query",
+          "required": false,
+          "description": "Opaque scalar; page-number versus cursor semantics are unverified.",
+          "schema": {
+            "description": "Scalar URI-template value whose concrete type is not verified.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "description": "Opaque scalar advertised by the URI template; range and unit are unverified.",
+          "schema": {
+            "description": "Scalar URI-template value whose concrete type is not verified.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Search result envelope with partially known items.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchResultResponse"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "public",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "searchStripe",
+      "command": [
+        "search",
+        "stripe"
+      ],
+      "tag": "Search",
+      "method": "GET",
+      "path": "/search/api/{lang}/stripe",
+      "summary": "Retrieve a search result stripe",
+      "description": "Advertised legacy API route. Scalar query variables are intentionally\nnot narrowed to booleans or integers where discovery proves only their\nnames. A public synthetic miss confirmed a JSON object with a `data`\narray; stripe item fields remain unverified.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "context",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "like",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "description": "Scalar URI-template value whose concrete type is not verified.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        {
+          "name": "exclude",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "sortby",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "ids",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "includeRating",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "description": "Scalar URI-template value whose concrete type is not verified.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lazyLoading",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "description": "Scalar URI-template value whose concrete type is not verified.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        {
+          "name": "filters",
+          "in": "query",
+          "required": false,
+          "description": "Exploded service-specific filter map; value grammar is not verified.",
+          "schema": {
+            "type": "object",
+            "description": "Form-exploded filter map. Named properties come from advertised search\nlinks; value delimiters, repetition, enums, units, and ranges remain\nunverified.",
+            "properties": {
+              "tags": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "categories": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ratings": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "preparationTime": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "portions": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "difficulty": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "totalTime": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "tmv": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "countries": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "languages": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "additionalDevices": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "accessories": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "sortby": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ids": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ingredients": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "excludeIngredients": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "excludeTags": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "exclude": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "like": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              }
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OpaqueQueryScalar"
+            }
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Search stripe envelope with partially known items.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchResultResponse"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "public",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "searchIngredients",
+      "command": [
+        "search",
+        "ingredients"
+      ],
+      "tag": "Search",
+      "method": "GET",
+      "path": "/search/api/ingredients",
+      "summary": "Search ingredient filter values",
+      "description": "Advertised legacy suggestion route. A public synthetic miss confirmed a\nJSON object with an `ingredients` array. Item fields, filter grammar,\nand limit semantics remain unverified.",
+      "parameters": [
+        {
+          "name": "query",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "filters",
+          "in": "query",
+          "required": false,
+          "description": "Exploded service-specific filter map; value grammar is not verified.",
+          "schema": {
+            "type": "object",
+            "description": "Form-exploded filter map. Named properties come from advertised search\nlinks; value delimiters, repetition, enums, units, and ranges remain\nunverified.",
+            "properties": {
+              "tags": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "categories": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ratings": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "preparationTime": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "portions": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "difficulty": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "totalTime": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "tmv": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "countries": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "languages": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "additionalDevices": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "accessories": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "sortby": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ids": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "ingredients": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "excludeIngredients": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "excludeTags": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "exclude": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              },
+              "like": {
+                "$ref": "#/components/schemas/OpaqueQueryScalar"
+              }
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OpaqueQueryScalar"
+            }
+          }
+        },
+        {
+          "name": "language",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "description": "Scalar URI-template value whose concrete type is not verified.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Ingredient suggestion envelope with partially known items.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngredientSearchResponse"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "public",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "listCreatedRecipes",
+      "command": [
+        "created",
+        "list"
+      ],
+      "tag": "Created recipes",
+      "method": "GET",
+      "path": "/created-recipes/{lang}",
+      "summary": "List the signed-in user's created recipes",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "ids",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "recipeUrl",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        {
+          "name": "partnerId",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "addToCookidoo",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Created-recipe list; both direct arrays and envelopes are in current use.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatedRecipeList"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "createCreatedRecipe",
+      "command": [
+        "created",
+        "create"
+      ],
+      "tag": "Created recipes",
+      "method": "POST",
+      "path": "/created-recipes/{lang}",
+      "summary": "Create a blank recipe or import/copy a recipe",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/CreateBlankRecipe"
+                },
+                {
+                  "$ref": "#/components/schemas/CopyRecipe"
+                }
+              ]
+            },
+            "bodyProperties": {
+              "recipeName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "recipeUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "servingSize": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "partnerId": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "recipeName": "Synthetic recipe"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "JSON/XHR creation result. The current first-party UI consumes the ID\nrepresentation; an independent client also supports a full-recipe\nrepresentation for copy/import negotiation.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CreatedRecipeCreated"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CreatedRecipe"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "429": {
+          "description": "Import/copy rate limited.",
+          "headers": {
+            "Retry-After": {
+              "$ref": "#/components/headers/RetryAfter"
+            }
+          },
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Problem"
+              }
+            }
+          }
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": true
+      }
+    },
+    {
+      "operationId": "getCreatedRecipe",
+      "command": [
+        "created",
+        "get"
+      ],
+      "tag": "Created recipes",
+      "method": "GET",
+      "path": "/created-recipes/{lang}/{customerRecipeId}",
+      "summary": "Get a created recipe in full form",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "customerRecipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "description": "ULID generated for a customer-created recipe.",
+            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Full created recipe.",
+          "content": {
+            "application/vnd.vorwerk.customer-recipe.full+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatedRecipe"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatedRecipe"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "patchCreatedRecipe",
+      "command": [
+        "created",
+        "update"
+      ],
+      "tag": "Created recipes",
+      "method": "PATCH",
+      "path": "/created-recipes/{lang}/{customerRecipeId}",
+      "summary": "Partially update a created recipe",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "customerRecipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "description": "ULID generated for a customer-created recipe.",
+            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreatedRecipePatch"
+            },
+            "bodyProperties": {
+              "name": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "hints": {},
+              "image": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "isImageOwnedByUser": {
+                "type": "boolean"
+              },
+              "isImageCopyrightOwned": {
+                "type": "boolean"
+              },
+              "ingredients": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Ingredient"
+                }
+              },
+              "instructions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Instruction"
+                }
+              },
+              "tools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "yield": {
+                "$ref": "#/components/schemas/RecipeYield"
+              },
+              "prepTime": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalTime": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "workStatus": {
+                "type": "string",
+                "enum": [
+                  "PRIVATE",
+                  "PUBLIC"
+                ]
+              },
+              "recipeMetadata": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "example": {
+              "name": "Synthetic recipe updated"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated recipe.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatedRecipe"
+              }
+            },
+            "application/vnd.vorwerk.customer-recipe.full+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatedRecipe"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "public-share",
+        "destructive": false,
+        "externallyVisible": true,
+        "exercised": true
+      }
+    },
+    {
+      "operationId": "deleteCreatedRecipe",
+      "command": [
+        "created",
+        "delete"
+      ],
+      "tag": "Created recipes",
+      "method": "DELETE",
+      "path": "/created-recipes/{lang}/{customerRecipeId}",
+      "summary": "Delete a created recipe",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "customerRecipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "description": "ULID generated for a customer-created recipe.",
+            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getPublicCreatedRecipe",
+      "command": [
+        "created",
+        "public-get"
+      ],
+      "tag": "Created recipes",
+      "method": "GET",
+      "path": "/created-recipes/public/recipes/{lang}/{customerRecipeId}",
+      "summary": "Get a publicly shared created recipe",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "customerRecipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "description": "ULID generated for a customer-created recipe.",
+            "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Public created-recipe representation.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicCreatedRecipe"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "public",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "addBookmark",
+      "command": [
+        "organize",
+        "bookmark",
+        "add"
+      ],
+      "tag": "Organize",
+      "method": "PUT",
+      "path": "/organize/{lang}/api/bookmark",
+      "summary": "Bookmark an official recipe",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "recipeId"
+              ],
+              "properties": {
+                "recipeId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "recipeId": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "recipeId": "r123456"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "removeBookmark",
+      "command": [
+        "organize",
+        "bookmark",
+        "remove"
+      ],
+      "tag": "Organize",
+      "method": "DELETE",
+      "path": "/organize/{lang}/api/bookmark",
+      "summary": "Remove an official recipe bookmark",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "recipeId"
+              ],
+              "properties": {
+                "recipeId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "recipeId": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "recipeId": "r123456"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "listCustomLists",
+      "command": [
+        "organize",
+        "custom-list",
+        "list"
+      ],
+      "tag": "Organize",
+      "method": "GET",
+      "path": "/organize/{lang}/api/custom-list",
+      "summary": "List custom recipe lists",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Preferred mobile representation; exact fields remain incompletely observed.",
+          "content": {
+            "application/vnd.vorwerk.organize.custom-list.mobile+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomListPage"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "createCustomList",
+      "command": [
+        "organize",
+        "custom-list",
+        "create"
+      ],
+      "tag": "Organize",
+      "method": "POST",
+      "path": "/organize/{lang}/api/custom-list",
+      "summary": "Create a custom recipe list",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "title"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "recipeIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "uniqueItems": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recipeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              }
+            },
+            "example": {
+              "title": "Synthetic list",
+              "recipeIds": [
+                "r123456"
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Created custom list in a mutation envelope.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomListMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getCustomList",
+      "command": [
+        "organize",
+        "custom-list",
+        "get"
+      ],
+      "tag": "Organize",
+      "method": "GET",
+      "path": "/organize/{lang}/api/custom-list/{listId}",
+      "summary": "Get a custom recipe list",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "updateCustomList",
+      "command": [
+        "organize",
+        "custom-list",
+        "update"
+      ],
+      "tag": "Organize",
+      "method": "PUT",
+      "path": "/organize/{lang}/api/custom-list/{listId}",
+      "summary": "Update a custom list or add recipes to it",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "recipeIds"
+                  ],
+                  "properties": {
+                    "listId": {
+                      "type": "string"
+                    },
+                    "recipeIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1,
+                      "uniqueItems": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "title"
+                  ],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "bodyProperties": {
+              "listId": {
+                "type": "string"
+              },
+              "recipeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "example": {
+              "title": "Synthetic list renamed"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated custom list in a mutation envelope.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomListMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "deleteCustomList",
+      "command": [
+        "organize",
+        "custom-list",
+        "delete"
+      ],
+      "tag": "Organize",
+      "method": "DELETE",
+      "path": "/organize/{lang}/api/custom-list/{listId}",
+      "summary": "Delete a custom list",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "removeRecipeFromCustomList",
+      "command": [
+        "organize",
+        "custom-list",
+        "remove-recipe"
+      ],
+      "tag": "Organize",
+      "method": "DELETE",
+      "path": "/organize/{lang}/api/custom-list/{listId}/recipes/{recipeId}",
+      "summary": "Remove one recipe from a custom list",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "recipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Updated custom list after removing the recipe.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomListMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "listManagedLists",
+      "command": [
+        "organize",
+        "managed-list",
+        "list"
+      ],
+      "tag": "Organize",
+      "method": "GET",
+      "path": "/organize/{lang}/api/managed-list",
+      "summary": "List saved official collections",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Preferred mobile representation; exact fields remain incompletely observed.",
+          "content": {
+            "application/vnd.vorwerk.organize.managed-list.mobile+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagedListPage"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "saveManagedList",
+      "command": [
+        "organize",
+        "managed-list",
+        "save"
+      ],
+      "tag": "Organize",
+      "method": "POST",
+      "path": "/organize/{lang}/api/managed-list",
+      "summary": "Save an official collection",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "collectionId"
+              ],
+              "properties": {
+                "collectionId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "collectionId": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "collectionId": "synthetic-collection-id"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Saved managed list in a mutation envelope.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManagedListMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "removeManagedList",
+      "command": [
+        "organize",
+        "managed-list",
+        "remove"
+      ],
+      "tag": "Organize",
+      "method": "DELETE",
+      "path": "/organize/{lang}/api/managed-list/{listId}",
+      "summary": "Remove a saved official collection",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "listId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "moveRecipe",
+      "command": [
+        "organize",
+        "move-recipe"
+      ],
+      "tag": "Organize",
+      "method": "POST",
+      "path": "/organize/{lang}/api/move-recipe",
+      "summary": "Move a recipe between organizer lists",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MoveRecipe"
+            },
+            "bodyProperties": {
+              "recipeId": {
+                "type": "string"
+              },
+              "targetListId": {
+                "type": "string"
+              },
+              "srcListId": {
+                "type": "string"
+              },
+              "targetListType": {
+                "type": "string"
+              },
+              "srcListType": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "recipeId": "r123456",
+              "targetListId": "synthetic-target-list",
+              "srcListId": "synthetic-source-list",
+              "targetListType": "CUSTOM",
+              "srcListType": "CUSTOM"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "shareCustomList",
+      "command": [
+        "organize",
+        "shared-list",
+        "share"
+      ],
+      "tag": "Organize",
+      "method": "POST",
+      "path": "/organize/{lang}/api/shared-list",
+      "summary": "Start sharing a custom list",
+      "description": "Creates or refreshes a share link. This changes sharing state.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "customListId"
+              ],
+              "properties": {
+                "customListId": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "customListId": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "customListId": "synthetic-list-id"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "public-share",
+        "destructive": false,
+        "externallyVisible": true,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getSharedList",
+      "command": [
+        "organize",
+        "shared-list",
+        "get"
+      ],
+      "tag": "Organize",
+      "method": "GET",
+      "path": "/organize/{lang}/api/shared-list/{sharedListId}",
+      "summary": "Retrieve a shared list",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "sharedListId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "revokeSharedList",
+      "command": [
+        "organize",
+        "shared-list",
+        "revoke"
+      ],
+      "tag": "Organize",
+      "method": "DELETE",
+      "path": "/organize/{lang}/api/shared-list/{sharedListId}",
+      "summary": "Revoke custom-list sharing",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "sharedListId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "advertised-only",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": true,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getPlanningWeek",
+      "command": [
+        "planning",
+        "week"
+      ],
+      "tag": "Planning",
+      "method": "GET",
+      "path": "/planning/{lang}/api/my-week/{dayKey}",
+      "summary": "Get the planning week containing a date",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "dayKey",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Week envelope containing planned days.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanningWeek"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "addRecipesToDay",
+      "command": [
+        "planning",
+        "add"
+      ],
+      "tag": "Planning",
+      "method": "PUT",
+      "path": "/planning/{lang}/api/my-day",
+      "summary": "Add recipes to a calendar day",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddRecipesToDay"
+            },
+            "bodyProperties": {
+              "recipeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              },
+              "dayKey": {
+                "type": "string",
+                "format": "date"
+              },
+              "recipeSource": {
+                "type": "string",
+                "enum": [
+                  "CUSTOMER"
+                ]
+              }
+            },
+            "example": {
+              "recipeIds": [
+                "r123456"
+              ],
+              "dayKey": "2026-01-15"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated planning day in a mutation envelope.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanningMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getPlanningDay",
+      "command": [
+        "planning",
+        "day"
+      ],
+      "tag": "Planning",
+      "method": "GET",
+      "path": "/planning/{lang}/api/my-day/{dayKey}",
+      "summary": "Get one calendar day",
+      "description": "Advertised compatibility route. The current planning UI uses separate\ncalendar and my-day routes, so GET semantics and response shape here\nremain unverified.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "dayKey",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "removePlanningDay",
+      "command": [
+        "planning",
+        "clear-day"
+      ],
+      "tag": "Planning",
+      "method": "DELETE",
+      "path": "/planning/{lang}/api/my-day/{dayKey}",
+      "summary": "Remove all planned content for a date",
+      "description": "Advertised compatibility operation inferred from the route. It was not\nexercised because it could remove existing account data, and the\ncurrent planning UI did not confirm this exact operation.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "dayKey",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "advertised-only",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "removeRecipeFromDay",
+      "command": [
+        "planning",
+        "remove-recipe"
+      ],
+      "tag": "Planning",
+      "method": "DELETE",
+      "path": "/planning/{lang}/api/my-day/{dayKey}/recipes/{recipeId}",
+      "summary": "Remove one recipe from a calendar day",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "dayKey",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        {
+          "name": "recipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "recipeSource",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "CUSTOMER"
+            ]
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Updated planning day in a mutation envelope.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanningMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "movePlannedRecipe",
+      "command": [
+        "planning",
+        "move"
+      ],
+      "tag": "Planning",
+      "method": "POST",
+      "path": "/planning/{lang}/api/my-day/move-recipe",
+      "summary": "Move a planned recipe between dates",
+      "description": "Advertised compatibility operation. Current first-party code exposes a\nmove result containing old/new day keys and recipe identity, but it does\nnot establish that this legacy route uses the same request or response.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UnknownJson"
+            },
+            "bodyProperties": {}
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "advertised-only",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getShoppingList",
+      "command": [
+        "shopping",
+        "show"
+      ],
+      "tag": "Shopping",
+      "method": "GET",
+      "path": "/shopping/{lang}",
+      "summary": "Get shopping list recipes, ingredients, and ad-hoc items",
+      "description": "JSON representation selected by `Accept: application/json`. A normal\nbrowser navigation may negotiate HTML instead.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "excludeComponent",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Current shopping-list representation.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShoppingList"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "clearShoppingList",
+      "command": [
+        "shopping",
+        "clear"
+      ],
+      "tag": "Shopping",
+      "method": "DELETE",
+      "path": "/shopping/{lang}",
+      "summary": "Clear the entire shopping list",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "addRecipesToShoppingList",
+      "command": [
+        "shopping",
+        "recipe",
+        "add"
+      ],
+      "tag": "Shopping",
+      "method": "POST",
+      "path": "/shopping/{lang}/recipes/add",
+      "summary": "Add recipe ingredients to the shopping list",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "recipeIDs"
+              ],
+              "properties": {
+                "recipeIDs": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "source"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "const": "CUSTOMER"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "minItems": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "recipeIDs": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "source"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "source": {
+                          "type": "string",
+                          "const": "CUSTOMER"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "minItems": 1
+              }
+            },
+            "example": {
+              "recipeIDs": [
+                "r123456"
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Recipes added to the shopping list.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShoppingRecipeMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "removeRecipesFromShoppingList",
+      "command": [
+        "shopping",
+        "recipe",
+        "remove"
+      ],
+      "tag": "Shopping",
+      "method": "POST",
+      "path": "/shopping/{lang}/recipes/remove",
+      "summary": "Remove recipe ingredients from the shopping list",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "recipeIDs"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "recipeIDs": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "bodyProperties": {
+              "recipeIDs": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "example": {
+              "recipeIDs": [
+                "r123456"
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "editIngredientOwnership",
+      "command": [
+        "shopping",
+        "ingredient",
+        "ownership"
+      ],
+      "tag": "Shopping",
+      "method": "POST",
+      "path": "/shopping/{lang}/owned-ingredients/ownership/edit",
+      "summary": "Set ingredient ownership state",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "ingredients"
+              ],
+              "properties": {
+                "ingredients": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OwnedItemPatch"
+                  },
+                  "minItems": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "ingredients": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OwnedItemPatch"
+                },
+                "minItems": 1
+              }
+            },
+            "example": {
+              "ingredients": [
+                {
+                  "id": "synthetic-ingredient-id",
+                  "isOwned": true
+                }
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated ingredient entries.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShoppingIngredientMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "addAdditionalShoppingItems",
+      "command": [
+        "shopping",
+        "item",
+        "add"
+      ],
+      "tag": "Shopping",
+      "method": "POST",
+      "path": "/shopping/{lang}/additional-items/add",
+      "summary": "Add ad-hoc shopping items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "itemsValue"
+              ],
+              "properties": {
+                "itemsValue": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "uniqueItems": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "itemsValue": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              }
+            },
+            "example": {
+              "itemsValue": [
+                "Synthetic item"
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Added ad-hoc items.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdditionalShoppingItemsMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "editAdditionalShoppingItems",
+      "command": [
+        "shopping",
+        "item",
+        "edit"
+      ],
+      "tag": "Shopping",
+      "method": "POST",
+      "path": "/shopping/{lang}/additional-items/edit",
+      "summary": "Rename ad-hoc shopping items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "additionalItems"
+              ],
+              "properties": {
+                "additionalItems": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "minItems": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "additionalItems": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              }
+            },
+            "example": {
+              "additionalItems": [
+                {
+                  "id": "synthetic-item-id",
+                  "name": "Synthetic item"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated ad-hoc items.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdditionalShoppingItemsMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "editAdditionalItemOwnership",
+      "command": [
+        "shopping",
+        "item",
+        "ownership"
+      ],
+      "tag": "Shopping",
+      "method": "POST",
+      "path": "/shopping/{lang}/additional-items/ownership/edit",
+      "summary": "Set ad-hoc item ownership state",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "additionalItems"
+              ],
+              "properties": {
+                "additionalItems": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OwnedItemPatch"
+                  },
+                  "minItems": 1
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "additionalItems": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OwnedItemPatch"
+                },
+                "minItems": 1
+              }
+            },
+            "example": {
+              "additionalItems": [
+                {
+                  "id": "synthetic-item-id",
+                  "isOwned": true
+                }
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated ad-hoc item ownership states.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdditionalShoppingItemsMutationResult"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "removeAdditionalShoppingItems",
+      "command": [
+        "shopping",
+        "item",
+        "remove"
+      ],
+      "tag": "Shopping",
+      "method": "POST",
+      "path": "/shopping/{lang}/additional-items/remove",
+      "summary": "Remove ad-hoc shopping items",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "additionalItemIDs"
+              ],
+              "properties": {
+                "additionalItemIDs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "uniqueItems": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "additionalItemIDs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true
+              }
+            },
+            "example": {
+              "additionalItemIDs": [
+                "synthetic-item-id"
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "createRecipeNote",
+      "command": [
+        "note",
+        "create"
+      ],
+      "tag": "Notes",
+      "method": "POST",
+      "path": "/recipe-notes/{lang}/recipes",
+      "summary": "Create a private note for a recipe",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "recipeId",
+                "text"
+              ],
+              "properties": {
+                "recipeId": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "recipeId": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "recipeId": "r123456",
+              "text": "Synthetic private note"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Created note.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeNote"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getRecipeNote",
+      "command": [
+        "note",
+        "get"
+      ],
+      "tag": "Notes",
+      "method": "GET",
+      "path": "/recipe-notes/{lang}/recipes/{recipeId}",
+      "summary": "Get a private recipe note",
+      "description": "Discovery advertises this JSON-looking route, while the current recipe\npage loads a separate HTML partial for display. The GET representation\ntherefore remains unverified even though writes use this route family.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "recipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "404": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "updateRecipeNote",
+      "command": [
+        "note",
+        "update"
+      ],
+      "tag": "Notes",
+      "method": "PUT",
+      "path": "/recipe-notes/{lang}/recipes/{recipeId}",
+      "summary": "Replace a private recipe note",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "recipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "text"
+              ],
+              "properties": {
+                "text": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "text": {
+                "type": "string"
+              }
+            },
+            "example": {
+              "text": "Synthetic private note updated"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Updated note.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeNote"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "deleteRecipeNote",
+      "command": [
+        "note",
+        "delete"
+      ],
+      "tag": "Notes",
+      "method": "DELETE",
+      "path": "/recipe-notes/{lang}/recipes/{recipeId}",
+      "summary": "Delete a private recipe note",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "recipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "delete",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getAggregatedRecipeRating",
+      "command": [
+        "rating",
+        "get"
+      ],
+      "tag": "Ratings",
+      "method": "GET",
+      "path": "/rating/{lang}/aggregated-ratings/recipes/{recipeId}",
+      "summary": "Get aggregate rating for a recipe",
+      "description": "Public read confirmed independently of the server-rendered rating shown\non recipe pages.",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "recipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^r[0-9]+$"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Aggregate rating counters and update time.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AggregatedRecipeRating"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "public",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "setUserRecipeRating",
+      "command": [
+        "rating",
+        "set"
+      ],
+      "tag": "Ratings",
+      "method": "PUT",
+      "path": "/rating/{lang}/user-ratings/recipes/{recipeId}",
+      "summary": "Set the signed-in user's recipe rating",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "recipeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^r[0-9]+$"
+          }
+        },
+        {
+          "name": "X-Requested-With",
+          "in": "header",
+          "required": false,
+          "description": "Marker added by the current first-party AJAX form helper. It is not proof\nthat CSRF requirements have been satisfied.",
+          "schema": {
+            "type": "string",
+            "default": "xmlhttprequest"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "rating"
+              ],
+              "properties": {
+                "rating": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                }
+              },
+              "additionalProperties": false
+            },
+            "bodyProperties": {
+              "rating": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              }
+            },
+            "example": {
+              "rating": 4
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "public-rating",
+        "destructive": false,
+        "externallyVisible": true,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getCommunityProfile",
+      "command": [
+        "profile",
+        "get"
+      ],
+      "tag": "Profile",
+      "method": "GET",
+      "path": "/community/profile",
+      "summary": "Get the current user's community profile",
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Current user's community profile.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommunityProfile"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getLocalizedCommunityProfile",
+      "command": [
+        "profile",
+        "get-localized"
+      ],
+      "tag": "Profile",
+      "method": "GET",
+      "path": "/community/profile/{lang}",
+      "summary": "Get the localized current-user community profile",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Localized community profile selected as JSON by the current UI.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommunityProfile"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "updateCommunityProfile",
+      "command": [
+        "profile",
+        "update"
+      ],
+      "tag": "Profile",
+      "method": "PUT",
+      "path": "/community/profile/{lang}",
+      "summary": "Update profile food preferences or accessories",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CommunityProfileUpdate"
+            },
+            "bodyProperties": {
+              "food-preferences": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "accessories": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "example": {
+              "food-preferences": [
+                "synthetic-preference"
+              ]
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "private-write",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "listSubscriptions",
+      "command": [
+        "subscription",
+        "list"
+      ],
+      "tag": "Ownership",
+      "method": "GET",
+      "path": "/ownership/subscriptions",
+      "summary": "List the current account's subscriptions",
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Subscription records.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionList"
+              },
+              "example": [
+                {
+                  "active": true,
+                  "expires": "2027-01-01",
+                  "startDate": "2026-01-01",
+                  "status": "ACTIVE",
+                  "subscriptionLevel": "synthetic-level",
+                  "subscriptionSource": "synthetic-source",
+                  "type": "synthetic-type",
+                  "extendedType": "synthetic-extended-type"
+                }
+              ]
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "corroborated",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getDeviceVersions",
+      "command": [
+        "device",
+        "versions"
+      ],
+      "tag": "Devices",
+      "method": "GET",
+      "path": "/customer-devices/api/my-devices/versions",
+      "summary": "Get versions/capabilities for linked devices",
+      "parameters": [],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "linkConnectedDevice",
+      "command": [
+        "device",
+        "link"
+      ],
+      "tag": "Devices",
+      "method": "POST",
+      "path": "/customer-devices/api/connected-device/links",
+      "summary": "Link or activate a connected device",
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UnknownJson"
+            },
+            "bodyProperties": {}
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "201": {
+          "$ref": "#/components/responses/UnknownJsonSuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "advertised-only",
+      "responseShape": "unknown",
+      "risk": {
+        "effect": "device-link",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "unlinkConnectedDevice",
+      "command": [
+        "device",
+        "unlink"
+      ],
+      "tag": "Devices",
+      "method": "POST",
+      "path": "/customer-devices/{lang}/connected-device/links/{deviceId}:unlink",
+      "summary": "Unlink a connected device",
+      "parameters": [
+        {
+          "name": "lang",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "default": "pl",
+            "pattern": "^[a-z]{2}(?:-[A-Z]{2})?$"
+          }
+        },
+        {
+          "name": "deviceId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "204": {
+          "$ref": "#/components/responses/EmptySuccess"
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "default": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "cookie",
+      "status": "observed",
+      "responseShape": "typed",
+      "risk": {
+        "effect": "device-link",
+        "destructive": true,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "bootstrapCollectionFeed",
+      "command": [
+        "feed",
+        "bootstrap"
+      ],
+      "tag": "Feeds",
+      "method": "GET",
+      "path": "/recipes/feed-v2/collections/bootstrap",
+      "summary": "Bootstrap the collection change feed",
+      "parameters": [
+        {
+          "name": "after",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Collection bootstrap document.",
+          "content": {
+            "application/hal+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedBootstrap"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "403": {
+          "$ref": "#/components/responses/Error"
+        },
+        "404": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "basic",
+      "status": "vendor-spec",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getCollectionFeed",
+      "command": [
+        "feed",
+        "list"
+      ],
+      "tag": "Feeds",
+      "method": "GET",
+      "path": "/recipes/feed-v2/collections",
+      "summary": "Read collection feed events",
+      "parameters": [
+        {
+          "name": "after",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "small",
+              "medium",
+              "large"
+            ],
+            "default": "medium"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Collection change feed.",
+          "content": {
+            "application/hal+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedBootstrap"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "403": {
+          "$ref": "#/components/responses/Error"
+        },
+        "404": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "basic",
+      "status": "vendor-spec",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    },
+    {
+      "operationId": "getCollectionFeedPage",
+      "command": [
+        "feed",
+        "page"
+      ],
+      "tag": "Feeds",
+      "method": "GET",
+      "path": "/recipes/feed-v2/collections/pages",
+      "summary": "Read a page of collection feed records",
+      "parameters": [
+        {
+          "name": "pageBefore",
+          "in": "query",
+          "required": true,
+          "description": "ISO date-time or nonnegative Unix timestamp in seconds or milliseconds.",
+          "schema": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              }
+            ]
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "small",
+              "medium",
+              "large"
+            ],
+            "default": "medium"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": {
+        "200": {
+          "description": "Collection feed page.",
+          "content": {
+            "application/hal+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedPage"
+              }
+            }
+          }
+        },
+        "303": {
+          "description": "Redirect to the matching feed page.",
+          "headers": {
+            "Location": {
+              "description": "Target feed page.",
+              "schema": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "401": {
+          "$ref": "#/components/responses/Error"
+        },
+        "403": {
+          "$ref": "#/components/responses/Error"
+        },
+        "404": {
+          "$ref": "#/components/responses/Error"
+        }
+      },
+      "security": "basic",
+      "status": "vendor-spec",
+      "responseShape": "partial",
+      "risk": {
+        "effect": "read",
+        "destructive": false,
+        "externallyVisible": false,
+        "exercised": false
+      }
+    }
+  ]
+}

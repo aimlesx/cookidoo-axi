@@ -1,0 +1,69 @@
+{
+  "name": "cookidoo-axi",
+  "version": "0.1.0-beta.1",
+  "description": "A macOS-only, agent-friendly CLI for the unofficial Cookidoo web API",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aimlesx/cookidoo-axi.git"
+  },
+  "homepage": "https://github.com/aimlesx/cookidoo-axi#readme",
+  "bugs": {
+    "url": "https://github.com/aimlesx/cookidoo-axi/issues"
+  },
+  "os": [
+    "darwin"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "bin": {
+    "cookidoo-axi": "bin/cookidoo-axi.mjs"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "SECURITY.md",
+    "THIRD_PARTY_NOTICES.md",
+    "homebrew-package-lock.json"
+  ],
+  "scripts": {
+    "generate": "node scripts/generate-openapi.mjs",
+    "generate:check": "node scripts/generate-openapi.mjs --check",
+    "build": "node scripts/build.mjs",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:live": "npm run build && node --test test/live/*.test.mjs",
+    "check": "npm test",
+    "check:openapi": "npm run generate:check",
+    "release:homebrew": "npm run check && npm run generate:check && node scripts/prepare-homebrew-release.mjs",
+    "prepack": "npm run check"
+  },
+  "dependencies": {
+    "@napi-rs/keyring": "1.3.0",
+    "@toon-format/toon": "4.1.1",
+    "ajv": "8.20.0",
+    "fetch-cookie": "3.2.0",
+    "tough-cookie": "6.0.2"
+  },
+  "overrides": {
+    "fast-deep-equal": "3.1.3",
+    "fast-uri": "3.1.5",
+    "json-schema-traverse": "1.0.0",
+    "require-from-string": "2.0.2",
+    "set-cookie-parser": "2.7.2",
+    "tldts": "7.4.10",
+    "tldts-core": "7.4.10",
+    "tough-cookie": "6.0.2"
+  },
+  "devDependencies": {
+    "@toon-format/spec": "4.1.1",
+    "@types/node": "24.13.3",
+    "typescript": "5.9.3",
+    "yaml": "2.9.0"
+  }
+}

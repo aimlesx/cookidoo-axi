@@ -1,0 +1,59 @@
+name: CLI bug
+description: Report a reproducible cookidoo-axi defect using synthetic data.
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, cookies, Keychain contents, account data, recipes, captured responses, or debug output containing private content.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output from `cookidoo-axi --version`.
+      placeholder: 0.1.0-beta.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: macOS architecture
+      options:
+        - arm64
+        - x64
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Offline reproduction
+      description: Use synthetic identifiers and `--dry-run` or injected storage/transport where possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: This report contains no credentials, cookies, account data, recipes, captured responses, or third-party personal data.
+          required: true
+        - label: I did not test against another person's account or perform a destructive, public, rating, sharing, or device mutation to reproduce this issue.
+          required: true
