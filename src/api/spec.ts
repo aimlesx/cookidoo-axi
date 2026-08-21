@@ -71,6 +71,12 @@ export interface ManifestOperation {
 
 export interface OpenApiManifest {
   readonly generatedFrom: string;
+  readonly source: {
+    readonly repository: string;
+    readonly commit: string;
+    readonly path: string;
+    readonly sha256: string;
+  };
   readonly openapi: string;
   readonly apiVersion: string;
   readonly server: string;
@@ -249,6 +255,17 @@ export function parseManifest(value: unknown): OpenApiManifest {
     if (typeof value[key] !== "string" || value[key].length === 0) {
       manifestFailure(`The OpenAPI manifest has an invalid ${key} field.`);
     }
+  }
+  if (!isRecord(value.source)
+      || typeof value.source.repository !== "string"
+      || !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(value.source.repository)
+      || typeof value.source.commit !== "string"
+      || !/^[0-9a-f]{40}$/u.test(value.source.commit)
+      || typeof value.source.path !== "string"
+      || value.source.path.length === 0
+      || typeof value.source.sha256 !== "string"
+      || !/^[0-9a-f]{64}$/u.test(value.source.sha256)) {
+    manifestFailure("The OpenAPI manifest has invalid immutable source provenance.");
   }
   if (!isRecord(value.authentication) || !isRecord(value.protocol)) {
     manifestFailure("The OpenAPI manifest authentication and protocol metadata must be objects.");

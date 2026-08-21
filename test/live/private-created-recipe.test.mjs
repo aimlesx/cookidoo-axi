@@ -2,19 +2,31 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
 
 const execFileAsync = promisify(execFile);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const bin = resolve(root, "bin/cookidoo-axi.mjs");
+const installedBin = process.env.COOKIDOO_AXI_LIVE_BIN;
 const enabled = process.env.COOKIDOO_AXI_LIVE === "1";
 const profile = process.env.COOKIDOO_AXI_LIVE_PROFILE ?? "default";
 
+if (installedBin !== undefined && !isAbsolute(installedBin)) {
+  throw new Error("COOKIDOO_AXI_LIVE_BIN must be an absolute executable path");
+}
+
 async function cli(args) {
   try {
-    const result = await execFileAsync(process.execPath, [bin, ...args, "--output", "json", "--profile", profile], {
+    const executable = installedBin ?? process.execPath;
+    const executableArgs = installedBin === undefined ? [bin] : [];
+    const result = await execFileAsync(executable, [
+      ...executableArgs,
+      ...args,
+      "--output", "json",
+      "--profile", profile,
+    ], {
       cwd: root,
       timeout: 120_000,
       maxBuffer: 2 * 1024 * 1024,

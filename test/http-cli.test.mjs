@@ -1627,6 +1627,176 @@ test("known collections use minimal agent-default fields with explicit full esca
   assert.deepEqual(full.selection.requested, []);
 });
 
+test("unknown feed collections derive a bounded minimal schema from each actual page", async () => {
+  const item = {
+    id: "event-1",
+    type: "recipe-change",
+    occurredAt: "2026-08-18T00:00:00Z",
+    payload: {
+      recipeId: "r123",
+      title: "offline",
+      richDocument: { provider: "large" },
+    },
+    providerExtra: "not in the adaptive default projection",
+  };
+  const cases = [
+    ["bootstrapCollectionFeed", ["feed", "bootstrap"]],
+    ["getCollectionFeed", ["feed", "list"]],
+    ["getCollectionFeedPage", ["feed", "page", "--page-before", "2026-08-18T00:00:00Z"]],
+  ];
+  for (const [operationId, argv] of cases) {
+    const invoke = async (full) => {
+      const stdout = outputBuffer();
+      const code = await run([...argv, ...(full ? ["--full"] : []), "--output", "json"], {
+        platform: "darwin",
+        stdout: stdout.stream,
+        ...cliStores(),
+        httpExecute: async (input) => ({
+          operationId: input.operation.operationId,
+          method: input.operation.method,
+          status: 200,
+          contentType: "application/hal+json",
+          headers: {},
+          data: { items: [item], _links: {} },
+          bodyKind: "json",
+          empty: false,
+          attempts: 1,
+          reauthenticated: false,
+        }),
+      });
+      process.exitCode = undefined;
+      assert.equal(code, 0, `${operationId}: ${stdout.read()}`);
+      return JSON.parse(stdout.read());
+    };
+    const compact = await invoke(false);
+    assert.deepEqual(compact.context.projection, {
+      mode: "agent-default",
+      strategy: "per-item-adaptive-summary",
+      maxScalarFieldsPerItem: 4,
+      summarizedItems: 1,
+      sourceFieldsOmitted: true,
+      fullCommand: compact.context.projection.fullCommand,
+    });
+    assert.match(compact.context.projection.fullCommand, /^cookidoo-axi feed .+ --full$/u);
+    assert.equal(compact.next[0].command, compact.context.projection.fullCommand);
+    assert.deepEqual(compact.data[0], {
+      id: "event-1",
+      payload: { recipeId: "r123" },
+      type: "recipe-change",
+      occurredAt: "2026-08-18T00:00:00Z",
+    });
+    const full = await invoke(true);
+    assert.equal(full.data[0].providerExtra, "not in the adaptive default projection");
+  }
+});
+
+test("feed summaries cover every locally shown heterogeneous item beyond the default 20", async () => {
+  const items = Array.from({ length: 30 }, (_, index) => index < 20 ? {
+    id: `early-${index}`,
+    type: "early",
+    status: "observed",
+    title: `early ${index}`,
+    providerExtra: "not selected",
+  } : {
+    eventId: `late-${index}`,
+    kind: "late",
+    status: "changed",
+    payload: { documentId: `document-${index}`, rich: { omitted: true } },
+    providerExtra: "not selected",
+  });
+  const stdout = outputBuffer();
+  const code = await run([
+    "feed", "list", "--max-items", "25", "--output", "json",
+  ], {
+    platform: "darwin",
+    stdout: stdout.stream,
+    ...cliStores(),
+    httpExecute: async (input) => ({
+      operationId: input.operation.operationId,
+      method: input.operation.method,
+      status: 200,
+      contentType: "application/hal+json",
+      headers: {},
+      data: { items, _links: {} },
+      bodyKind: "json",
+      empty: false,
+      attempts: 1,
+      reauthenticated: false,
+    }),
+  });
+  process.exitCode = undefined;
+  assert.equal(code, 0, stdout.read());
+  const result = JSON.parse(stdout.read());
+  assert.equal(result.data.length, 25);
+  assert.ok(result.data.every((item) => Object.keys(item).length > 0));
+  assert.deepEqual(result.data[20], {
+    eventId: "late-20",
+    payload: { documentId: "document-20" },
+    kind: "late",
+    status: "changed",
+  });
+  assert.deepEqual(result.completeness, {
+    state: "partial", shown: 25, total: null, hasMore: true,
+  });
+  assert.equal(result.truncation.availableItems, 30);
+  assert.equal(result.truncation.omittedItems, 5);
+  assert.equal(result.context.projection.summarizedItems, 25);
+  assert.doesNotMatch(JSON.stringify(result.data), /providerExtra|not selected/u);
+});
+
+test("rich-only feed items use safe structural descriptors while fields and full stay explicit", async () => {
+  const secret = "SYNTHETIC_FEED_SECRET_MUST_NOT_APPEAR";
+  const items = [{
+    credentials: { token: secret },
+    payload: { nested: { deep: "explicit-value" } },
+    children: [{ rich: "omitted" }],
+  }, [{ nested: "array-content" }], `Bearer ${secret}`];
+  const invoke = async (extra) => {
+    const stdout = outputBuffer();
+    const code = await run(["feed", "bootstrap", ...extra, "--output", "json"], {
+      platform: "darwin",
+      stdout: stdout.stream,
+      ...cliStores(),
+      httpExecute: async (input) => ({
+        operationId: input.operation.operationId,
+        method: input.operation.method,
+        status: 200,
+        contentType: "application/hal+json",
+        headers: {},
+        data: { items, _links: {} },
+        bodyKind: "json",
+        empty: false,
+        attempts: 1,
+        reauthenticated: false,
+      }),
+    });
+    process.exitCode = undefined;
+    assert.equal(code, 0, stdout.read());
+    const text = stdout.read();
+    assert.doesNotMatch(text, new RegExp(secret, "u"));
+    return JSON.parse(text);
+  };
+
+  const compact = await invoke([]);
+  assert.deepEqual(compact.data, [
+    { summary: "object", propertyCount: 3, content: "structure-only" },
+    { summary: "array", itemCount: 1, content: "structure-only" },
+    { summary: "string", content: "omitted" },
+  ]);
+  assert.doesNotMatch(JSON.stringify(compact), /credentials|payload|children|token/u);
+
+  const selected = await invoke(["--fields", "payload.nested.deep"]);
+  assert.deepEqual(selected.data, [
+    { payload: { nested: { deep: "explicit-value" } } }, [{}], {},
+  ]);
+  assert.deepEqual(selected.selection.requested, ["payload.nested.deep"]);
+
+  const full = await invoke(["--full"]);
+  assert.equal(full.data[0].payload.nested.deep, "explicit-value");
+  assert.equal(full.data[0].credentials, "[REDACTED]");
+  assert.equal(full.redaction.applied, true);
+});
+
 test("invalid output options fail before any mutation dispatch", async () => {
   const stdout = outputBuffer();
   let dispatched = 0;

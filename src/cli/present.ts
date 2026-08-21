@@ -110,7 +110,10 @@ export function operationCatalog(operations: readonly OperationDescriptor[]): Re
     }),
     count: operations.length,
     coverage: "complete",
-    source: "cookidoo-openapi/openapi.yaml",
+    source: {
+      generatedFrom: OPENAPI_MANIFEST.generatedFrom,
+      ...OPENAPI_MANIFEST.source,
+    },
   };
 }
 

@@ -148,6 +148,62 @@ test("operation-list help documents bounded discovery filters", () => {
   assert.match(help, /operation list --group created --risk write/u);
 });
 
+test("focused utility help provides two realistic examples for only that command", () => {
+  for (const path of [
+    ["auth", "doctor"],
+    ["auth", "import-env"],
+    ["auth", "import-feed-env"],
+    ["auth", "status"],
+    ["auth", "login"],
+    ["auth", "clear-session"],
+    ["auth", "remove"],
+    ["operation", "list"],
+    ["operation", "describe"],
+    ["setup", "codex"],
+    ["setup", "remove"],
+    ["created", "publish"],
+    ["created", "unpublish"],
+    ["created", "import"],
+  ]) {
+    const help = groupHelp(path, operations);
+    const examples = help.split("\n").filter((line) => line.startsWith("  cookidoo-axi "));
+    assert.ok(examples.length >= 2 && examples.length <= 3, `${path.join(" ")}: ${examples.length}`);
+    assert.ok(
+      examples.every((line) => line.startsWith(`  cookidoo-axi ${path.join(" ")}`)),
+      `${path.join(" ")} includes an unrelated focused example`,
+    );
+  }
+});
+
+test("every ordinary API group help level provides two or three scoped examples", () => {
+  const groups = new Map();
+  for (const current of operations) {
+    for (let length = 1; length < current.command.length; length += 1) {
+      const path = current.command.slice(0, length);
+      groups.set(path.join("\0"), path);
+    }
+  }
+  for (const path of groups.values()) {
+    const help = groupHelp(path, operations);
+    const examples = help.split("\n").filter((line) => line.startsWith("  cookidoo-axi "));
+    assert.ok(examples.length >= 2 && examples.length <= 3, `${path.join(" ")}: ${examples.length}`);
+    assert.ok(
+      examples.every((line) => line.startsWith(`  cookidoo-axi ${path.join(" ")} `)),
+      `${path.join(" ")} includes an unrelated group example`,
+    );
+  }
+});
+
+test("utility group help keeps all examples scoped to the requested group", () => {
+  for (const path of [["auth"], ["operation"], ["setup"]]) {
+    const examples = groupHelp(path, operations).split("\n")
+      .filter((line) => line.startsWith("  cookidoo-axi "));
+    assert.ok(examples.length >= 2 && examples.length <= 3, path.join(" "));
+    assert.ok(examples.every((line) =>
+      line.startsWith(`  cookidoo-axi ${path.join(" ")} `)), path.join(" "));
+  }
+});
+
 test("collection views preserve provider pagination and extension metadata", () => {
   const providerPage = {
     customlists: [{ id: "L21" }],
@@ -306,6 +362,13 @@ test("structured discovery reports effective semantic and conditional safety pol
   assert.equal(unverified.effectivePolicy.default.confirmation, undefined);
 
   const catalog = operationCatalog(operations).operations;
+  assert.deepEqual(operationCatalog(operations).source, {
+    generatedFrom: "cookidoo-openapi/openapi.yaml",
+    repository: "https://github.com/aimlesx/cookidoo-openapi",
+    commit: "69bb43119b162ad8fea48ddb6a436d2074013972",
+    path: "openapi.yaml",
+    sha256: "d04829c9140ccba4003e0f0ce39883158e73ac8f9e42ae2c8fc365a28b1fa5aa",
+  });
   const shoppingCatalog = catalog.find((entry) =>
     entry.operationId === "removeRecipesFromShoppingList");
   assert.equal(shoppingCatalog.risk, "destructive");

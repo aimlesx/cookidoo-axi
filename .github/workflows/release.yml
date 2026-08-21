@@ -1,0 +1,287 @@
+name: Release prerelease
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 24.19.0
+  NPM_VERSION: 11.17.0
+  OPENAPI_REPOSITORY: aimlesx/cookidoo-openapi
+  OPENAPI_COMMIT: 69bb43119b162ad8fea48ddb6a436d2074013972
+
+jobs:
+  build:
+    name: Build exact release assets / macOS arm64
+    if: github.repository == 'aimlesx/cookidoo-axi'
+    runs-on: macos-15
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
+    steps:
+      - name: Verify runner architecture
+        run: test "$(uname -m)" = "arm64"
+
+      - name: Check out the tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: cookidoo-axi
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out the pinned OpenAPI source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.OPENAPI_REPOSITORY }}
+          ref: ${{ env.OPENAPI_COMMIT }}
+          path: cookidoo-openapi
+          persist-credentials: false
+
+      - name: Set up the pinned Node.js runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: cookidoo-axi/package-lock.json
+
+      - name: Verify canonical repository, signed tag, version, and main commit
+        working-directory: cookidoo-axi
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          test "$GITHUB_REPOSITORY" = "aimlesx/cookidoo-axi"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.visibility')" = "public"
+          test "$(git -C ../cookidoo-openapi rev-parse HEAD)" = "$OPENAPI_COMMIT"
+          test "$GITHUB_REF_TYPE" = "tag"
+          version="$(node -p 'require("./package.json").version')"
+          test "$GITHUB_REF_NAME" = "v${version}"
+          case "$version" in
+            *-*) ;;
+            *) echo "Release workflow accepts prerelease versions only" >&2; exit 1 ;;
+          esac
+
+          ref_api="repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}"
+          tag_type="$(gh api "$ref_api" --jq '.object.type')"
+          tag_sha="$(gh api "$ref_api" --jq '.object.sha')"
+          test "$tag_type" = "tag"
+
+          tag_api="repos/${GITHUB_REPOSITORY}/git/tags/${tag_sha}"
+          test "$(gh api "$tag_api" --jq '.verification.verified')" = "true"
+          test "$(gh api "$tag_api" --jq '.object.type')" = "commit"
+          tag_commit="$(gh api "$tag_api" --jq '.object.sha')"
+          test "$tag_commit" = "$(git rev-parse HEAD)"
+
+          test "$tag_commit" = "$(git rev-parse origin/main)"
+
+          node --input-type=module -e '
+            import assert from "node:assert/strict";
+            import { readFileSync } from "node:fs";
+            const metadata = JSON.parse(readFileSync("package.json", "utf8"));
+            const version = metadata.version;
+            const readme = readFileSync("README.md", "utf8");
+            const security = readFileSync("SECURITY.md", "utf8");
+            assert.equal(metadata.name, "cookidoo-axi");
+            assert.equal(metadata.private, true);
+            assert.deepEqual(metadata.os, ["darwin"]);
+            assert.equal(metadata.repository?.url, "git+https://github.com/aimlesx/cookidoo-axi.git");
+            assert.equal(metadata.homepage, "https://github.com/aimlesx/cookidoo-axi#readme");
+            assert.equal(metadata.bugs?.url, "https://github.com/aimlesx/cookidoo-axi/issues");
+            assert.ok(readme.includes("current `" + version + "`"));
+            assert.ok(security.includes("`" + version + "`"));
+            assert.match(readme, /Apple Silicon/u);
+            assert.match(readme, /macOS 15/u);
+          '
+
+      - name: Verify pinned toolchain
+        run: |
+          test "$(node --version)" = "v${NODE_VERSION}"
+          test "$(npm --version)" = "${NPM_VERSION}"
+
+      - name: Install exact dependencies
+        run: npm ci
+        working-directory: cookidoo-axi
+
+      - name: Run the offline suite
+        run: npm test
+        working-directory: cookidoo-axi
+
+      - name: Verify the generated OpenAPI manifest
+        run: npm run generate:check
+        working-directory: cookidoo-axi
+        env:
+          COOKIDOO_OPENAPI_PATH: ../cookidoo-openapi/openapi.yaml
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=low
+        working-directory: cookidoo-axi
+
+      - name: Verify the native binding without Keychain or network access
+        run: >-
+          node --input-type=module -e
+          'import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          const output = execFileSync(process.execPath,
+          ["bin/cookidoo-axi.mjs", "auth", "doctor", "--output", "json"],
+          { encoding: "utf8" });
+          const data = JSON.parse(output).data;
+          assert.equal(data.keychainBinding, "loaded");
+          assert.equal(data.platform, "darwin");
+          assert.equal(data.architecture, "arm64");
+          assert.equal(data.keychainAccess, "not-requested");
+          assert.equal(data.keychainRecordsRead, 0);
+          assert.equal(data.keychainRecordsWritten, 0);
+          assert.equal(data.networkRequests, 0);'
+        working-directory: cookidoo-axi
+
+      - name: Pack the release assets once
+        working-directory: cookidoo-axi
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          asset_dir="$RUNNER_TEMP/release-assets"
+          mkdir -p "$asset_dir"
+
+          node scripts/prepare-homebrew-release.mjs \
+            --repository aimlesx/cookidoo-axi \
+            --artifact "$asset_dir/cookidoo-axi-${version}.tgz" \
+            --output "$asset_dir/cookidoo-axi.rb"
+          ruby -c "$asset_dir/cookidoo-axi.rb"
+
+          package_root="$RUNNER_TEMP/packed-package"
+          mkdir -p "$package_root"
+          tar -xzf "$asset_dir/cookidoo-axi-${version}.tgz" -C "$package_root"
+          cp "$package_root/package/homebrew-package-lock.json" \
+            "$package_root/package/package-lock.json"
+          npm ci --omit=dev --ignore-scripts --no-audit --prefix "$package_root/package"
+
+          packaged_cli="$package_root/package/bin/cookidoo-axi.mjs"
+          test "$(node "$packaged_cli" --version)" = "$version"
+          node "$packaged_cli" --help >/dev/null
+          node "$packaged_cli" operation describe getRecipe --output json \
+            | node --input-type=module -e \
+              'let input = "";
+              process.stdin.setEncoding("utf8");
+              for await (const chunk of process.stdin) input += chunk;
+              const result = JSON.parse(input);
+              if (result.data?.operationId !== "getRecipe") process.exit(1);'
+          node "$packaged_cli" auth doctor --output json \
+            | node --input-type=module -e \
+              'let input = "";
+              process.stdin.setEncoding("utf8");
+              for await (const chunk of process.stdin) input += chunk;
+              const data = JSON.parse(input).data;
+              if (data.keychainBinding !== "loaded"
+                || data.platform !== "darwin"
+                || data.architecture !== "arm64"
+                || data.keychainAccess !== "not-requested"
+                || data.keychainRecordsRead !== 0
+                || data.keychainRecordsWritten !== 0
+                || data.networkRequests !== 0) process.exit(1);'
+
+      - name: Upload the exact release assets
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-assets-${{ github.sha }}
+          path: ${{ runner.temp }}/release-assets/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    name: Publish protected prerelease
+    if: github.repository == 'aimlesx/cookidoo-axi'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: release
+      url: https://github.com/aimlesx/cookidoo-axi/releases/tag/${{ github.ref_name }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the exact release assets
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-assets-${{ github.sha }}
+          path: release-assets
+
+      - name: Verify release assets after the job boundary
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          artifact="cookidoo-axi-${version}.tgz"
+
+          test -f "release-assets/$artifact"
+          test -f release-assets/cookidoo-axi.rb
+          test -f release-assets/npm-pack.json
+          test -f release-assets/SHA256SUMS
+          test "$(find release-assets -type f | wc -l | tr -d ' ')" = "4"
+          (cd release-assets && sha256sum --check SHA256SUMS)
+
+          checksum="$(cut -d ' ' -f 1 release-assets/SHA256SUMS)"
+          grep -F "sha256 \"$checksum\"" release-assets/cookidoo-axi.rb
+          grep -F "/releases/download/${GITHUB_REF_NAME}/${artifact}" \
+            release-assets/cookidoo-axi.rb
+
+      - name: Create a draft with every asset, then publish the prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          artifact="cookidoo-axi-${version}.tgz"
+          notes="$RUNNER_TEMP/release-notes.md"
+
+          test "$GITHUB_REPOSITORY" = "aimlesx/cookidoo-axi"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.visibility')" = "public"
+          test "$GITHUB_REF_TYPE" = "tag"
+
+          ref_api="repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}"
+          tag_type="$(gh api "$ref_api" --jq '.object.type')"
+          tag_sha="$(gh api "$ref_api" --jq '.object.sha')"
+          test "$tag_type" = "tag"
+
+          tag_api="repos/${GITHUB_REPOSITORY}/git/tags/${tag_sha}"
+          test "$(gh api "$tag_api" --jq '.verification.verified')" = "true"
+          test "$(gh api "$tag_api" --jq '.object.type')" = "commit"
+          test "$(gh api "$tag_api" --jq '.object.sha')" = "$GITHUB_SHA"
+
+          printf '%s\n' \
+            "Apple Silicon beta for the Polish Cookidoo platform." \
+            "" \
+            "Supported platform: Apple Silicon (arm64), macOS 15 or newer." \
+            "Install with: \`brew install aimlesx/tap/cookidoo-axi\`." \
+            "CLI source commit: \`${GITHUB_SHA}\`." \
+            "OpenAPI source: \`${OPENAPI_REPOSITORY}@${OPENAPI_COMMIT}\`." \
+            "This is an unofficial project and is not affiliated with Vorwerk, Thermomix, or Cookidoo." \
+            > "$notes"
+
+          gh release create "$GITHUB_REF_NAME" \
+            "release-assets/$artifact" \
+            release-assets/SHA256SUMS \
+            release-assets/npm-pack.json \
+            release-assets/cookidoo-axi.rb \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --draft \
+            --prerelease \
+            --title "cookidoo-axi ${version}" \
+            --notes-file "$notes"
+
+          gh release edit "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft=false \
+            --prerelease \
+            --latest=false

@@ -37,6 +37,12 @@ test("generated manifest exposes every mapped operation exactly once", () => {
     58,
   );
   assert.equal(OPENAPI_MANIFEST.server, "https://cookidoo.pl");
+  assert.deepEqual(OPENAPI_MANIFEST.source, {
+    repository: "https://github.com/aimlesx/cookidoo-openapi",
+    commit: "69bb43119b162ad8fea48ddb6a436d2074013972",
+    path: "openapi.yaml",
+    sha256: "d04829c9140ccba4003e0f0ce39883158e73ac8f9e42ae2c8fc365a28b1fa5aa",
+  });
 
   for (const operation of OPENAPI_MANIFEST.operations) {
     assert.match(operation.path, /^\//u);
@@ -88,6 +94,10 @@ test("manifest parser rejects duplicate identities and malformed risk metadata",
     () => parseManifest(malformedCompatibilityRoot),
     hasCode("INVALID_OPENAPI_MANIFEST"),
   );
+
+  const malformedSource = structuredClone(OPENAPI_MANIFEST);
+  malformedSource.source.commit = "main";
+  assert.throws(() => parseManifest(malformedSource), hasCode("INVALID_OPENAPI_MANIFEST"));
 
   const malformedCompatibilityEntry = structuredClone(OPENAPI_MANIFEST);
   malformedCompatibilityEntry.compatibilityOverrides.responses.patchCreatedRecipe["200"].addMediaType = "text/html";

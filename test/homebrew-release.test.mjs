@@ -214,19 +214,26 @@ test("generates an immutable, macOS-only Homebrew Formula from an npm pack artif
     new RegExp(`url "https://github\\.com/example/cookidoo-axi/releases/download/v${projectPackage.version}/cookidoo-axi-${projectPackage.version}\\.tgz"`, "u"),
   );
   assert.match(formula, new RegExp(`sha256 "${sha256}"`, "u"));
-  assert.match(formula, /depends_on :macos/u);
+  assert.match(formula, /depends_on macos: :sequoia/u);
   assert.match(formula, /depends_on arch: :arm64/u);
-  assert.match(formula, /depends_on "node"/u);
+  assert.match(formula, /depends_on "node@24"/u);
   assert.match(formula, /ENV\["NODE_USE_SYSTEM_CA"\] = "1"/u);
   assert.match(formula, /cp "homebrew-package-lock\.json", "package-lock\.json"/u);
-  assert.match(formula, /system "npm", "ci", \*std_npm_args\(prefix: false\), "--omit=dev"/u);
+  assert.match(formula, /node_bin = formula_opt_bin\("node@24"\)/u);
+  assert.match(formula, /system node_bin\/"npm", "ci", \*std_npm_args\(prefix: false\), "--omit=dev"/u);
   assert.match(formula, /libexec\.install "bin", "dist", "node_modules"/u);
   assert.match(formula, /libexec\.install "LICENSE", "NOTICE", "README\.md", "SECURITY\.md"/u);
-  assert.match(formula, /#!#\{formula_opt_bin\("node"\)\}\/node --use-system-ca/u);
+  assert.match(formula, /#!#\{node_bin\}\/node --use-system-ca/u);
+  assert.match(formula, /node = formula_opt_bin\("node@24"\)\/"node"/u);
+  assert.match(formula, /assert_match\(\/\^v24\\\.\/.*shell_output\("#\{node\} --version"\)\)/u);
+  assert.match(
+    formula,
+    /assert_equal "#!#\{node\} --use-system-ca\\n", File\.open\(libexec\/"bin\/cookidoo-axi\.mjs", &:gets\)/u,
+  );
   assert.match(formula, /assert_equal "#\{version\}\\n", shell_output/u);
   assert.match(formula, /auth doctor --output json/u);
   assert.match(formula, /assert_equal 0, doctor\.fetch\("keychainRecordsRead"\)/u);
-  assert.match(formula, /assert_equal expected_arch, doctor\.fetch\("architecture"\)/u);
+  assert.match(formula, /assert_equal "arm64", doctor\.fetch\("architecture"\)/u);
   assert.match(formula, /operation describe getRecipe --output json/u);
   assert.equal(readFileSync(checksums, "utf8"), `${sha256}  ${basename(artifact)}\n`);
   const rubySyntax = spawnSync("ruby", ["-c", output], { encoding: "utf8" });

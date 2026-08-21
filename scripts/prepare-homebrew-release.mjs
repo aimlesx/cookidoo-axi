@@ -21,6 +21,7 @@ import { expectedDistPaths } from "./dist-layout.mjs";
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(scriptDirectory, "..");
 const projectPackage = readJsonFile(join(projectRoot, "package.json"), "project package.json");
+const homebrewNodeFormula = "node@24";
 
 const HELP = `Usage:
   node scripts/prepare-homebrew-release.mjs --repository OWNER/REPO [options]
@@ -372,29 +373,32 @@ function renderFormula({ repository, version, artifactFilename, sha256 }) {
   license "MIT"
 
   depends_on arch: :arm64
-  depends_on :macos
-  depends_on "node"
+  depends_on macos: :sequoia
+  depends_on "${homebrewNodeFormula}"
 
   def install
     ENV["NODE_USE_SYSTEM_CA"] = "1"
     cp "homebrew-package-lock.json", "package-lock.json"
-    system "npm", "ci", *std_npm_args(prefix: false), "--omit=dev"
+    node_bin = formula_opt_bin("${homebrewNodeFormula}")
+    system node_bin/"npm", "ci", *std_npm_args(prefix: false), "--omit=dev"
 
     launcher = buildpath/"bin/cookidoo-axi.mjs"
-    inreplace launcher, "#!/usr/bin/env node", "#!#{formula_opt_bin("node")}/node --use-system-ca"
+    inreplace launcher, "#!/usr/bin/env node", "#!#{node_bin}/node --use-system-ca"
     libexec.install "bin", "dist", "node_modules", "package.json"
     libexec.install "LICENSE", "NOTICE", "README.md", "SECURITY.md", "THIRD_PARTY_NOTICES.md"
     bin.install_symlink libexec/"bin/cookidoo-axi.mjs" => "cookidoo-axi"
   end
 
   test do
+    node = formula_opt_bin("${homebrewNodeFormula}")/"node"
+    assert_match(/^v24\\./, shell_output("#{node} --version"))
+    assert_equal "#!#{node} --use-system-ca\\n", File.open(libexec/"bin/cookidoo-axi.mjs", &:gets)
     assert_equal "#{version}\\n", shell_output("#{bin}/cookidoo-axi --version")
 
     doctor = JSON.parse(shell_output("#{bin}/cookidoo-axi auth doctor --output json")).fetch("data")
-    expected_arch = Hardware::CPU.arm? ? "arm64" : "x64"
     assert_equal "loaded", doctor.fetch("keychainBinding")
     assert_equal "darwin", doctor.fetch("platform")
-    assert_equal expected_arch, doctor.fetch("architecture")
+    assert_equal "arm64", doctor.fetch("architecture")
     assert_equal "not-requested", doctor.fetch("keychainAccess")
     assert_equal 0, doctor.fetch("keychainRecordsRead")
     assert_equal 0, doctor.fetch("keychainRecordsWritten")

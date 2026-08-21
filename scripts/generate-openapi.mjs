@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import YAML from "yaml";
 import { commandMap } from "./command-map.mjs";
@@ -7,12 +8,15 @@ const sourcePath = resolve(
   process.env.COOKIDOO_OPENAPI_PATH ?? "../cookidoo-openapi/openapi.yaml"
 );
 const outputPath = resolve("src/generated/openapi-manifest.json");
+const sourceRepository = "https://github.com/aimlesx/cookidoo-openapi";
+const sourceCommit = "69bb43119b162ad8fea48ddb6a436d2074013972";
 const checkOnly = process.argv.slice(2).includes("--check");
 const unknownArguments = process.argv.slice(2).filter((argument) => argument !== "--check");
 if (unknownArguments.length > 0) {
   throw new Error(`Unknown argument(s): ${unknownArguments.join(", ")}`);
 }
-const document = YAML.parse(await readFile(sourcePath, "utf8"));
+const sourceDocument = await readFile(sourcePath);
+const document = YAML.parse(sourceDocument.toString("utf8"));
 const methods = ["get", "post", "put", "patch", "delete"];
 
 // Narrow, additive live-compatibility facts belong to the CLI rather than the
@@ -155,6 +159,12 @@ if (operations.length !== 58) throw new Error(`Expected 58 operations, found ${o
 
 const manifest = {
   generatedFrom: "cookidoo-openapi/openapi.yaml",
+  source: {
+    repository: sourceRepository,
+    commit: sourceCommit,
+    path: "openapi.yaml",
+    sha256: createHash("sha256").update(sourceDocument).digest("hex")
+  },
   openapi: document.openapi,
   apiVersion: document.info?.version,
   server: document.servers?.[0]?.url,

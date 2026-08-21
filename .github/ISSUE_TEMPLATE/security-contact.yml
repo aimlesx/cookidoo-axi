@@ -1,0 +1,18 @@
+name: Security contact request
+description: Ask the maintainer to establish a private channel without disclosing vulnerability details.
+title: "security contact request"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form only when the repository's private vulnerability-reporting feature is unavailable.
+
+        Do not include vulnerability details, credentials, cookies, Keychain contents, account data, recipes, captured responses, exploit instructions, or third-party personal data. The maintainer will use this issue only to arrange a private reporting channel.
+
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: Safe public request
+      options:
+        - label: I have withheld all vulnerability details and sensitive data from this public issue.
+          required: true

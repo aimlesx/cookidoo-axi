@@ -2,21 +2,26 @@
 
 ## Supported versions
 
-This project is currently a public-beta candidate. Security fixes are provided
-only for the newest published `0.1.0-beta.x` release until a stable support
-policy is announced.
+The only supported release is `0.1.0-beta.1`, on Apple Silicon (arm64) running
+macOS 15 or newer. Security fixes are provided only for the newest published
+`0.1.0-beta.x` release until a stable support policy is announced. Intel Macs,
+older macOS releases, source-checkout installations, and other Cookidoo markets
+are outside the current support scope.
 
 ## Reporting a vulnerability
 
-Use the canonical repository's private vulnerability-reporting feature. Do not
-put credentials, cookies, account data, exploit details, or affected recipe
-content in a public issue. If private reporting is not enabled, open a minimal
-public issue asking the maintainer to establish a private channel; withhold the
-sensitive details until that channel is available.
+Use the canonical repository's
+[private vulnerability-reporting form](https://github.com/aimlesx/cookidoo-axi/security/advisories/new).
+Do not put credentials, cookies, account data, exploit details, or affected
+recipe content in a public issue. If private reporting is unavailable, use the
+[Security contact request](https://github.com/aimlesx/cookidoo-axi/issues/new?template=security-contact.yml)
+issue form. That form is only a request to establish a private channel;
+withhold all vulnerability details and sensitive data until that channel is
+available.
 
-Include the affected version and macOS architecture, a minimal offline
-reproduction, impact, and any suggested remediation. Use synthetic values and
-injected storage/transport whenever possible. Never test against another
+Include the affected CLI and macOS versions, a minimal offline reproduction,
+impact, and any suggested remediation. Use synthetic values and injected
+storage/transport whenever possible. Never test against another
 person's account, publish a recipe or list, delete remote resources, or access
 Cookidoo beyond your own authorization while investigating a report.
 

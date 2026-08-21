@@ -78,7 +78,7 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "",
       "Examples:",
       "  cookidoo-axi auth import-env --env-file .env",
-      "  cookidoo-axi profile get-localized"
+      "  cookidoo-axi auth doctor --output json"
     ].join("\n");
   }
   if (name === "auth doctor") {
@@ -89,6 +89,10 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "architecture, and Node-API version. It constructs no Keychain entry, reads and",
       "writes exactly zero Keychain records, performs no network request, and prompts",
       "for no Keychain authorization.",
+      "",
+      "Examples:",
+      "  cookidoo-axi auth doctor",
+      "  cookidoo-axi auth doctor --output json",
     ].join("\n");
   }
   if (name === "auth import-env") {
@@ -117,6 +121,10 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "file and stores them in a separate macOS Keychain service. Feed credential",
       "acquisition is not documented by the upstream specification.",
       "Replacing an existing record requires --confirm replace:feed:<profile>.",
+      "",
+      "Examples:",
+      "  cookidoo-axi auth import-feed-env",
+      "  cookidoo-axi auth import-feed-env --env-file ./feed.env --profile work",
     ].join("\n");
   }
   if (["auth status", "auth login", "auth clear-session", "auth remove"].includes(name)) {
@@ -144,9 +152,12 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "  cookidoo-axi auth status --inspect session --profile work",
     ] : name === "auth login" ? [
       "  cookidoo-axi auth login --profile work",
+      "  cookidoo-axi auth login --output json",
     ] : name === "auth clear-session" ? [
+      "  cookidoo-axi auth clear-session --confirm session:default",
       "  cookidoo-axi auth clear-session --profile work --confirm session:work",
     ] : [
+      "  cookidoo-axi auth remove --confirm default",
       "  cookidoo-axi auth remove --profile work --confirm work",
     ];
     return [
@@ -175,8 +186,9 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
     return [
       "Usage: cookidoo-axi operation describe <operation-id> [--output toon|json]",
       "",
-      "Example:",
-      "  cookidoo-axi operation describe getRecipe --output json",
+      "Examples:",
+      "  cookidoo-axi operation describe getRecipe",
+      "  cookidoo-axi operation describe createCreatedRecipe --output json",
     ].join("\n");
   }
   if (name === "created publish" || name === "created unpublish") {
@@ -188,8 +200,9 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "Run the fully populated request with --dry-run first; it performs no auth or network.",
       "Copy data.safety.confirmationTarget verbatim into --confirm; never reconstruct the token.",
       "",
-      "Example:",
-      `  cookidoo-axi created ${action} <customerRecipeId> --dry-run`,
+      "Examples:",
+      `  cookidoo-axi created ${action} 01ARZ3NDEKTSV4RRFFQ69G5FAV --dry-run`,
+      `  cookidoo-axi created ${action} 01ARZ3NDEKTSV4RRFFQ69G5FAV --dry-run --output json`,
     ].join("\n");
   }
   if (name === "created import") {
@@ -202,8 +215,9 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "Run the exact request with --dry-run, then copy data.safety.confirmationTarget",
       "verbatim into --confirm and add --allow-unverified for execution.",
       "",
-      "Example:",
+      "Examples:",
       "  cookidoo-axi created import --recipe-url https://example.invalid/recipe --dry-run",
+      "  cookidoo-axi created import --recipe-url https://example.invalid/recipe --partner-id synthetic --dry-run --output json",
     ].join("\n");
   }
   if (name === "operation") {
@@ -221,7 +235,7 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "  cookidoo-axi operation run getRecipe r123456"
     ].join("\n");
   }
-  if (name === "setup" || name === "setup codex" || name === "setup remove") {
+  if (name === "setup") {
     return [
       "Usage: cookidoo-axi setup <command> [--directory <path>]",
       "",
@@ -234,6 +248,30 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "Examples:",
       "  cookidoo-axi setup codex --directory .",
       "  cookidoo-axi setup remove --directory . --confirm \"$(pwd)\""
+    ].join("\n");
+  }
+  if (name === "setup codex") {
+    return [
+      "Usage: cookidoo-axi setup codex [--directory <path>]",
+      "",
+      "Idempotently install a repo-local skill and SessionStart home hook.",
+      "Codex will require trust review for a new or changed project hook.",
+      "",
+      "Examples:",
+      "  cookidoo-axi setup codex",
+      "  cookidoo-axi setup codex --directory .",
+    ].join("\n");
+  }
+  if (name === "setup remove") {
+    return [
+      "Usage: cookidoo-axi setup remove [--directory <path>] --confirm <absolute-directory>",
+      "",
+      "Remove only the repo-local skill and SessionStart hook generated by this CLI.",
+      "The exact resolved directory is required as confirmation.",
+      "",
+      "Examples:",
+      "  cookidoo-axi setup remove --confirm \"$(pwd)\"",
+      "  cookidoo-axi setup remove --directory . --confirm \"$(pwd)\"",
     ].join("\n");
   }
 
@@ -251,13 +289,18 @@ export function groupHelp(group: string[], operations: OperationDescriptor[]): s
       "  import                       Guarded import-like query mode",
     );
   }
+  const examples = matches.slice(0, 2).map((operation) => exampleCommand(operation, false));
+  if (examples.length === 1) examples.push(`${examples[0]} --output json`);
   return [
     `Usage: cookidoo-axi ${name} <command> [arguments] [options]`,
     "",
     "Commands:",
     ...rows,
     "",
-    `Run 'cookidoo-axi ${name} <command> --help' for exact inputs and examples.`
+    `Run 'cookidoo-axi ${name} <command> --help' for exact inputs and examples.`,
+    "",
+    "Examples:",
+    ...examples.map((example) => `  ${example}`),
   ].join("\n");
 }
 

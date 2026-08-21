@@ -4,9 +4,15 @@ Thermomix, or Cookidoo. Cookidoo and Thermomix are registered trademarks of
 their respective owner.
 
 The API model is derived from the separately maintained MIT-licensed
-`cookidoo-openapi` project. The browser-cookie login design was informed by the
-MIT-licensed `@recode-software/cookidoo-api` project; `cookidoo-axi` uses its
-own safety-hardened implementation.
+`cookidoo-openapi` project at
+https://github.com/aimlesx/cookidoo-openapi, commit
+69bb43119b162ad8fea48ddb6a436d2074013972. The browser-cookie login design was
+informed by the MIT-licensed `@recode-software/cookidoo-api` project;
+`cookidoo-axi` uses its own safety-hardened implementation.
 
 The full license notice for the generated API model is reproduced in
 `THIRD_PARTY_NOTICES.md` and is included in every release archive.
+
+The MIT License in `LICENSE` applies only to the `cookidoo-axi` software. It
+grants no rights to Cookidoo, Thermomix, or Vorwerk trademarks and does not
+license Cookidoo responses, recipes, media, user content, or databases.

@@ -1,31 +1,54 @@
 # cookidoo-axi
 
-`cookidoo-axi` is an unofficial, macOS-only, agent-friendly CLI for the Polish
-Cookidoo web API modeled by the `cookidoo-openapi` specification. It maps all
-58 OpenAPI operations while putting request validation, bounded output, and
-mutation safety in front of the transport.
+`cookidoo-axi` is an unofficial, agent-friendly CLI for Apple Silicon Macs and
+the Polish Cookidoo web API modeled by the `cookidoo-openapi` specification. It
+maps all 58 OpenAPI operations while putting request validation, bounded
+output, and mutation safety in front of the transport.
 
 It is not affiliated with or supported by Vorwerk, Thermomix, or Cookidoo. Use
 it only with accounts and resources you are authorized to access.
 
-The current `0.1.0-beta.1` line is a beta. Treat its API and output contract as
-pre-stable until a later non-prerelease version.
+The current `0.1.0-beta.1` line is a Homebrew-distributed beta for Apple
+Silicon (arm64), tested on macOS 15, and scoped to the Polish Cookidoo
+platform. Treat its API and output contract as pre-stable until a later
+non-prerelease version. Intel Macs, older macOS releases, and other Cookidoo
+markets are unsupported.
 
 ## Requirements and installation
 
-- macOS
-- Node.js 24 or newer
+- An Apple Silicon Mac (arm64) running macOS 15 or newer
+- [Homebrew](https://brew.sh/)
 - An authorized Cookidoo account for protected market operations
 
-Until a tap publishes a concrete installation command, install from a source
-checkout:
+Install the supported beta from the public Homebrew tap:
 
 ```sh
-npm ci
-npm run build
-npm link
+brew install aimlesx/tap/cookidoo-axi
 cookidoo-axi --version
 ```
+
+The Formula supplies its required Node.js runtime. This beta is not published
+to npm, and source-checkout installation is not a supported distribution path.
+
+Upgrade after a new release reaches the tap:
+
+```sh
+brew update
+brew upgrade aimlesx/tap/cookidoo-axi
+```
+
+Before uninstalling, remove every profile whose Keychain records should be
+deleted. Repeat the exact-confirmed command with each profile name:
+
+```sh
+cookidoo-axi auth remove --profile default --confirm default
+brew uninstall cookidoo-axi
+```
+
+`auth remove` deletes only this tool's market-credential, cookie-session, and
+feed-credential records for that exact profile. Homebrew uninstall deliberately
+does not remove Keychain records. If you uninstall first, reinstall the Formula
+before using `auth remove`; do not perform a broad Keychain deletion.
 
 Authenticated API operations are fixed to the exact origin
 `https://cookidoo.pl`. The separate browser login flow follows only three exact
@@ -63,7 +86,7 @@ When macOS asks for Keychain access, **Allow** approves that access once.
 **Always Allow** authorizes the executable identified in the dialog for future
 access to that Keychain item; macOS may ask again if the executable changes.
 Choose it only when the displayed requester is expected and trusted, and reject
-unexpected requesters. With the current npm/shebang installation, a dialog that
+unexpected requesters. With the current Homebrew installation, a dialog that
 identifies Node.js grants that exact Node executable access—not only this CLI—so
 other scripts run by that Node binary share the authorization. Use **Allow** if
 you do not accept that tradeoff. Separate credential, session, and feed items

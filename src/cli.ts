@@ -50,6 +50,7 @@ import type { ReconciliationGuidance } from "./safety/policy.js";
 import {
   OutputBoundaryError,
   containsCredentialLikeText,
+  createJsonObject,
   normalizeCollection,
   normalizeDetail,
   sanitizeDiagnostic,
@@ -423,17 +424,45 @@ async function executeOperation(
     );
     const view = collectionView(result.data, invocation.operation.operationId);
     if (view !== undefined) {
-      const defaultFields = invocation.options.fields === undefined && !invocation.options.full
-        ? defaultCollectionFields(invocation.operation.operationId)
+      const agentDefault = invocation.options.fields === undefined && !invocation.options.full
+        ? defaultCollectionPresentation(
+            invocation.operation.operationId,
+            view.items,
+            invocation.options.maxItems,
+          )
         : undefined;
+      const defaultFields = agentDefault?.kind === "fields" ? agentDefault.fields : undefined;
+      const presentedItems = agentDefault?.items ?? view.items;
+      const summaryFullCommand = agentDefault?.kind === "summary" &&
+          hasSafeReproducibleInvocation(invocation)
+        ? safeCommand({
+            ...invocation,
+            options: { ...invocation.options, full: true },
+          })
+        : null;
       const context = {
         ...responseContext,
         upstream: view.envelope,
-        ...(defaultFields === undefined ? {} : {
-          projection: { mode: "agent-default", fields: defaultFields },
+        ...(agentDefault === undefined ? {} : {
+          projection: agentDefault.kind === "fields"
+            ? { mode: "agent-default", fields: agentDefault.fields }
+            : {
+                mode: "agent-default",
+                strategy: "per-item-adaptive-summary",
+                maxScalarFieldsPerItem: MAX_UNKNOWN_FEED_SUMMARY_FIELDS,
+                summarizedItems: Math.min(view.items.length, invocation.options.maxItems),
+                sourceFieldsOmitted: true,
+                ...(summaryFullCommand === null ? {} : { fullCommand: summaryFullCommand }),
+              },
         }),
       };
-      const envelope = normalizeCollection(view.items, {
+      const outputNext: readonly NextCommandInput[] = summaryFullCommand === null
+        ? next
+        : [{
+            command: summaryFullCommand,
+            description: "Show original feed items without adaptive summaries.",
+          }, ...next];
+      const envelope = normalizeCollection(presentedItems, {
         command,
         maxItems: invocation.options.maxItems,
         full: invocation.options.full,
@@ -443,7 +472,7 @@ async function executeOperation(
         total: view.total,
         hasMore: view.hasMore,
         context,
-        next,
+        next: outputNext,
         allowFullCommand: !mutation && hasSafeReproducibleInvocation(invocation),
       });
       writeOutput(envelope, { format: invocation.options.output, stdout });
@@ -1184,7 +1213,30 @@ function responseCompleteness(shape: string): "complete" | "partial" | "unknown"
   return shape === "typed" ? "complete" : shape === "partial" ? "partial" : "unknown";
 }
 
-function defaultCollectionFields(operationId: string): readonly string[] | undefined {
+const UNKNOWN_FEED_OPERATIONS = new Set([
+  "bootstrapCollectionFeed",
+  "getCollectionFeed",
+  "getCollectionFeedPage",
+]);
+const MAX_UNKNOWN_FEED_SUMMARY_FIELDS = 4;
+const MAX_UNKNOWN_FEED_KEYS_INSPECTED = 64;
+
+type AgentDefaultCollectionPresentation =
+  | {
+      readonly kind: "fields";
+      readonly items: readonly unknown[];
+      readonly fields: readonly string[];
+    }
+  | {
+      readonly kind: "summary";
+      readonly items: readonly unknown[];
+    };
+
+function defaultCollectionPresentation(
+  operationId: string,
+  items: readonly unknown[],
+  maxItems: number,
+): AgentDefaultCollectionPresentation | undefined {
   const projections: Readonly<Record<string, readonly string[]>> = {
     getRecipeCluster: ["recipe_id", "notation", "quantity", "types"],
     getRecipeClusterV2: ["recipe_id", "languageTag", "notation", "quantity", "types"],
@@ -1198,7 +1250,129 @@ function defaultCollectionFields(operationId: string): readonly string[] | undef
     listManagedLists: ["id", "title", "listType"],
     listSubscriptions: ["active", "expires", "status", "level", "type", "extendedType"],
   };
-  return projections[operationId];
+  const fixed = projections[operationId];
+  if (fixed !== undefined) return { kind: "fields", items, fields: fixed };
+  if (!UNKNOWN_FEED_OPERATIONS.has(operationId)) return undefined;
+  const shown = Math.min(items.length, maxItems);
+  return {
+    kind: "summary",
+    items: [
+      ...items.slice(0, shown).map(adaptiveUnknownFeedItemSummary),
+      ...Array.from({ length: items.length - shown }, () => null),
+    ],
+  };
+}
+
+/**
+ * Feed items are intentionally UnknownJson in the partial upstream contract.
+ * Summarize every item which the local limit will show rather than guessing a
+ * page-global provider schema. Dynamic field names never enter output context.
+ */
+function adaptiveUnknownFeedItemSummary(item: unknown): unknown {
+  if (Array.isArray(item)) {
+    return { summary: "array", itemCount: item.length, content: "structure-only" };
+  }
+  if (!isObject(item)) {
+    if (isSafeSummaryScalar(item)) return { summary: typeof item, value: item };
+    return { summary: item === null ? "null" : typeof item, content: "omitted" };
+  }
+
+  const candidates: Array<{
+    readonly path: readonly string[];
+    readonly value: string | number | boolean;
+    readonly rank: number;
+    readonly order: number;
+  }> = [];
+  let inspected = 0;
+  let order = 0;
+
+  const inspect = (value: Readonly<Record<string, unknown>>, prefix: readonly string[]): void => {
+    const prototype = Object.getPrototypeOf(value) as unknown;
+    if (prototype !== Object.prototype && prototype !== null) return;
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    for (const name of Object.keys(value)) {
+      if (inspected >= MAX_UNKNOWN_FEED_KEYS_INSPECTED) return;
+      inspected += 1;
+      const descriptor = descriptors[name];
+      if (descriptor === undefined || !("value" in descriptor) || !isSafeSummaryKey(name)) continue;
+      const path = [...prefix, name];
+      const candidate = descriptor.value;
+      if (isSafeSummaryScalar(candidate)) {
+        candidates.push({
+          path,
+          value: candidate,
+          rank: adaptiveFieldRank(name),
+          order: order++,
+        });
+      } else if (prefix.length === 0 && isObject(candidate)) {
+        inspect(candidate, path);
+      }
+    }
+  };
+  inspect(item, []);
+
+  const selected = candidates
+    .sort((left, right) =>
+      left.rank - right.rank || left.path.length - right.path.length || left.order - right.order)
+    .slice(0, MAX_UNKNOWN_FEED_SUMMARY_FIELDS);
+  if (selected.length === 0) {
+    const descriptors = Object.getOwnPropertyDescriptors(item);
+    return {
+      summary: "object",
+      propertyCount: Object.keys(descriptors).length,
+      content: "structure-only",
+    };
+  }
+
+  const summary = createJsonObject();
+  for (const candidate of selected) setSummaryValue(summary, candidate.path, candidate.value);
+  return summary;
+}
+
+function setSummaryValue(
+  output: Record<string, unknown>,
+  path: readonly string[],
+  value: string | number | boolean,
+): void {
+  let current = output;
+  for (const [index, name] of path.entries()) {
+    if (index === path.length - 1) {
+      current[name] = value;
+      return;
+    }
+    const existing = current[name];
+    if (isObject(existing)) {
+      current = existing;
+      continue;
+    }
+    const child = createJsonObject();
+    current[name] = child;
+    current = child;
+  }
+}
+
+function isSafeSummaryKey(name: string): boolean {
+  if (name.length === 0 || name.length > 64 || /[\p{Cc}\p{Cs}]/u.test(name)) return false;
+  if (["__proto__", "prototype", "constructor"].includes(name)) return false;
+  return !isSensitiveName(name) && !containsCredentialLikeText(`${name}=fixture`);
+}
+
+function isSafeSummaryScalar(value: unknown): value is string | number | boolean {
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "boolean") return true;
+  if (typeof value !== "string" || /[\p{Cs}]/u.test(value)) return false;
+  return !containsCredentialLikeText(value);
+}
+
+function adaptiveFieldRank(name: string): number {
+  const normalized = name.toLowerCase().replaceAll(/[^a-z0-9]/gu, "");
+  if (normalized === "id" || normalized === "ulid"
+      || /(?:Id|ID|Ulid|ULID)$/u.test(name)
+      || /(?:^|[_-])(?:id|ulid)$/iu.test(name)) return 0;
+  if (["type", "kind", "collection", "category"].includes(normalized)) return 1;
+  if (["title", "name", "status", "event", "action", "operation"].includes(normalized)
+      || normalized.endsWith("at") || normalized.includes("timestamp")) return 2;
+  return 3;
 }
 
 function hasSafeReproducibleInvocation(invocation: ParsedOperationInvocation): boolean {
