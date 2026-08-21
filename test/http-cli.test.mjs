@@ -583,9 +583,10 @@ function outputBuffer() {
 function shellArgv(command) {
   const script = [
     `set -- ${command}`,
-    `exec "$0" -e 'process.stdout.write(JSON.stringify(process.argv.slice(1)))' "$@"`,
+    `printf '%s\\0' "$@"`,
   ].join("\n");
-  return JSON.parse(execFileSync("/bin/sh", ["-c", script, process.execPath], { encoding: "utf8" }));
+  const output = execFileSync("/bin/sh", ["-c", script], { encoding: "utf8" });
+  return output.length === 0 ? [] : output.slice(0, -1).split("\0");
 }
 
 function cliStores() {
