@@ -143,7 +143,7 @@ test("release package validator accepts only the intended runtime payload", () =
 
 test("shipped notice preserves source provenance and third-party rights boundary", async () => {
   const notice = await readFile(path.join(PROJECT_ROOT, "NOTICE"), "utf8");
-  assert.match(notice, /https:\/\/github\.com\/aimlesx\/cookidoo-openapi/u);
+  assert.ok(notice.includes("https://github.com/aimlesx/cookidoo-openapi"));
   assert.match(notice, /69bb43119b162ad8fea48ddb6a436d2074013972/u);
   assert.match(notice, /MIT License in `LICENSE` applies only to the `cookidoo-axi` software/u);
   assert.match(notice, /grants no rights to Cookidoo, Thermomix, or Vorwerk trademarks/u);

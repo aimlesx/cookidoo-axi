@@ -71,7 +71,7 @@ test("release build proves signed canonical main provenance before packing once"
   assert.match(identity, /metadata\.os, \["darwin"\]/u);
   assert.match(identity, /git\+https:\/\/github\.com\/aimlesx\/cookidoo-axi\.git/u);
   assert.match(identity, /https:\/\/github\.com\/aimlesx\/cookidoo-axi#readme/u);
-  assert.match(identity, /https:\/\/github\.com\/aimlesx\/cookidoo-axi\/issues/u);
+  assert.ok(identity.includes("https://github.com/aimlesx/cookidoo-axi/issues"));
 
   const requiredGates = [
     "Verify pinned toolchain",
