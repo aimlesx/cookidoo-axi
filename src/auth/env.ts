@@ -22,6 +22,8 @@ export interface EnvCredentialNames {
 }
 
 export interface CredentialWriter {
+  /** Runs before the credential source is opened and must not access secret material. */
+  assertAccessAllowed?(): void;
   validateCredentials(credentials: CookidooCredentials): CookidooCredentials;
   saveCredentials(
     profile: string,
@@ -225,6 +227,7 @@ export async function importCredentialsFromEnvFile(
     if (!ENV_KEY_PATTERN.test(name)) throw invalidEnvFile();
   }
 
+  options.store.assertAccessAllowed?.();
   const text = await (options.readText ?? readEnvTextSafely)(options.path, maxBytes);
   const entries = parseEnvText(text);
   const username = selectCredential(entries, names.username);

@@ -84,7 +84,9 @@ are never flattened, printed, or written to a project file.
 
 When macOS asks for Keychain access, **Allow** approves that access once.
 **Always Allow** authorizes the executable identified in the dialog for future
-access to that Keychain item; macOS may ask again if the executable changes.
+access to that exact Keychain item. Market credentials, cookie sessions, and
+feed credentials are separate items, so each can prompt once. macOS may ask
+again if the executable changes.
 Choose it only when the displayed requester is expected and trusted, and reject
 unexpected requesters. With the current Homebrew installation, a dialog that
 identifies Node.js grants that exact Node executable access—not only this CLI—so
@@ -98,6 +100,17 @@ executable. Keychain therefore still identifies the Homebrew-managed Node
 binary as the requester. Homebrew/Node upgrades can change that identity, and
 Always Allow remains broader than this one CLI. Use Allow unless that tradeoff
 is acceptable.
+
+Local Codex commands normally run inside the macOS Seatbelt sandbox. That
+sandbox cannot see the login Keychain used by this CLI, so a protected command
+must run outside it with command-scoped approval. `cookidoo-axi` detects
+`CODEX_SANDBOX=seatbelt` before native Keychain access and returns
+`KEYCHAIN_SANDBOXED`; it never treats the isolated view as proof that records
+are missing. Formula resolution, `auth doctor`, bare `auth status`, help,
+operation discovery, and API operation dry runs remain safe inside the sandbox
+because they do not access a Keychain item. Auth utilities reject `--dry-run`
+instead of treating it as validation. Do not re-import credentials in response to
+a sandboxed failure.
 
 Replacing an existing Keychain record requires
 `--confirm replace:market:<profile>`. A successful replacement also removes the

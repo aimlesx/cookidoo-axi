@@ -175,3 +175,16 @@ test("skill keeps discovery bounded and mutation recovery unambiguous", async ()
   assert.match(compact, /ambiguous outcome occurs, do not repeat the mutation/u);
   assert.match(compact, /Execute the validated request exactly once/u);
 });
+
+test("skill crosses the Codex sandbox only for commands that access Keychain items", async () => {
+  const skill = await readFile(CANONICAL_SKILL, "utf8");
+  const compact = skill.replace(/\s+/gu, " ");
+
+  assert.match(compact, /run any command that can read or write a Keychain record outside the Codex Seatbelt sandbox on its first attempt/u);
+  assert.match(compact, /Never probe one of these commands inside the sandbox/u);
+  assert.match(compact, /not evidence that credentials need importing/u);
+  assert.match(compact, /Keep the Formula resolution, `--version`, `auth doctor`, bare `auth status`, help, operation discovery, and API operation dry runs sandboxed/u);
+  assert.match(compact, /Use `--inspect all` only when the task specifically requires every record's state/u);
+  assert.match(compact, /separate items and can each prompt once/u);
+  assert.match(compact, /a Homebrew Node upgrade changes its identity/u);
+});

@@ -560,6 +560,35 @@ test("feed Basic auth is provider-only and declared 303 remains a safe descripto
   });
 });
 
+test("feed Basic auth preserves sanitized provider failures without HTTP dispatch", async () => {
+  const { operation, request } = prepared("getCollectionFeedPage", {
+    query: { pageBefore: "2026-08-18T00:00:00Z" },
+  });
+  const providerError = new AuthError({
+    code: "KEYCHAIN_SANDBOXED",
+    message: "macOS Keychain access is unavailable inside the Codex Seatbelt sandbox.",
+    suggestion: "Rerun outside the sandbox; do not re-import credentials.",
+  });
+  let fetchCalls = 0;
+
+  await assert.rejects(execute({
+    operation,
+    request,
+    basicCredentials: {
+      async getCredentials() { throw providerError; },
+    },
+    fetch: async () => {
+      fetchCalls += 1;
+      throw new Error("must not dispatch");
+    },
+  }), (error) => {
+    assert.equal(error?.code, "KEYCHAIN_SANDBOXED");
+    assert.equal(error?.suggestion, providerError.suggestion);
+    return true;
+  });
+  assert.equal(fetchCalls, 0);
+});
+
 test("declared redirects cannot leave the fixed Cookidoo origin", async () => {
   const { operation, request } = prepared("getCollectionFeedPage", {
     query: { pageBefore: "2026-08-18T00:00:00Z" },

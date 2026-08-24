@@ -214,6 +214,7 @@ test("macOS adapter guards platform before loading native code and supports inje
   }
   const adapter = createMacOSKeychainAdapter({
     platform: "darwin",
+    environment: {},
     loadKeyring: async () => {
       loadCount += 1;
       return {
@@ -235,6 +236,69 @@ test("macOS adapter guards platform before loading native code and supports inje
   assert.equal(loadCount, 1);
   assert.equal(await adapter.deleteSecret("fixture.service", "fixture"), true);
 });
+
+test("macOS adapter fails before native Keychain access inside the Codex Seatbelt sandbox", async () => {
+  let loaded = false;
+  const adapter = createMacOSKeychainAdapter({
+    platform: "darwin",
+    environment: { CODEX_SANDBOX: "seatbelt" },
+    loadKeyring: async () => {
+      loaded = true;
+      throw new Error("must not load");
+    },
+  });
+
+  for (const access of [
+    () => adapter.getSecret("fixture.service", "fixture"),
+    () => adapter.setSecret("fixture.service", "fixture", "synthetic-secret"),
+    () => adapter.deleteSecret("fixture.service", "fixture"),
+    () => adapter.listAccounts("fixture.service"),
+  ]) {
+    await assert.rejects(access, (error) => {
+      assert.equal(error?.code, "KEYCHAIN_SANDBOXED");
+      assert.match(error?.message ?? "", /Codex Seatbelt sandbox/u);
+      assert.match(error?.suggestion ?? "", /outside the sandbox/u);
+      assert.doesNotMatch(`${error?.message} ${error?.suggestion}`, /synthetic-secret/u);
+      return true;
+    });
+  }
+  assert.equal(loaded, false);
+});
+
+for (const [namespace, Store] of [
+  ["market", KeychainAuthStore],
+  ["feed", FeedCredentialStore],
+]) {
+  test(`${namespace} environment import rejects Seatbelt before reading the credential source`, async () => {
+    let loaded = false;
+    let read = false;
+    const store = new Store(createMacOSKeychainAdapter({
+      platform: "darwin",
+      environment: { CODEX_SANDBOX: "seatbelt" },
+      loadKeyring: async () => {
+        loaded = true;
+        throw new Error("must not load");
+      },
+    }));
+
+    await assert.rejects(
+      importCredentialsFromEnvFile({
+        path: "/synthetic/credential-source-must-not-be-opened.env",
+        store,
+        readText: async () => {
+          read = true;
+          return [
+            "COOKIDOO_EMAIL=offline@example.invalid",
+            "COOKIDOO_PASSWORD=synthetic-secret",
+          ].join("\n");
+        },
+      }),
+      authCode("KEYCHAIN_SANDBOXED"),
+    );
+    assert.equal(read, false);
+    assert.equal(loaded, false);
+  });
+}
 
 test("environment import accepts bounded regular fixtures and returns key names only", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "cookidoo-axi-env-test-"));
