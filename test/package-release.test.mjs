@@ -27,6 +27,7 @@ const REQUIRED_FILES = [
   ["dist/generated/openapi-manifest.json", 10, 0o644],
   ["homebrew-package-lock.json", 10, 0o644],
   ["package.json", 10, 0o644],
+  ["skills/cookidoo-axi/SKILL.md", 10, 0o644],
 ];
 
 function metadata(overrides = {}) {
@@ -252,6 +253,51 @@ test("release package validator requires every release artifact and executable b
     inspect(issues) {
       assert.ok(issues.includes("required release file is missing: THIRD_PARTY_NOTICES.md"));
       assert.ok(issues.some((issue) => issue.includes("must have npm pack mode 0755")));
+    },
+  });
+});
+
+test("release package validator requires a nonempty canonical agent skill", () => {
+  validationIssues(metadata({
+    files: REQUIRED_FILES.filter(([filePath]) => filePath !== "skills/cookidoo-axi/SKILL.md"),
+  }), {
+    inspect(issues) {
+      assert.ok(issues.includes(
+        "required release file is missing: skills/cookidoo-axi/SKILL.md",
+      ));
+    },
+  });
+
+  validationIssues(metadata({
+    files: REQUIRED_FILES.map(([filePath, size, mode]) => [
+      filePath,
+      filePath === "skills/cookidoo-axi/SKILL.md" ? 0 : size,
+      mode,
+    ]),
+  }), {
+    inspect(issues) {
+      assert.ok(issues.includes(
+        "required release file is empty: skills/cookidoo-axi/SKILL.md",
+      ));
+    },
+  });
+});
+
+test("release package validator rejects every noncanonical skill path", () => {
+  const extraSkillPaths = [
+    "skills/cookidoo-axi/README.md",
+    "skills/other/SKILL.md",
+  ];
+  validationIssues(metadata({
+    files: [
+      ...REQUIRED_FILES,
+      ...extraSkillPaths.map((filePath) => [filePath, 10, 0o644]),
+    ],
+  }), {
+    inspect(issues) {
+      for (const filePath of extraSkillPaths) {
+        assert.ok(issues.includes(`${filePath} is outside the release allowlist`));
+      }
     },
   });
 });

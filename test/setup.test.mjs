@@ -1,21 +1,37 @@
 import assert from "node:assert/strict";
-import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import {
+  access,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { realpath } from "node:fs/promises";
+import { isAbsolute, join, relative } from "node:path";
 import test from "node:test";
 
-import {
-  installCodexIntegration,
-  removeCodexIntegration,
-  sessionStartContext,
-} from "../dist/setup.js";
+import { run } from "../dist/cli.js";
+import { installSkill, readBundledSkill, removeSkill } from "../dist/setup.js";
+import { VERSION } from "../dist/version.js";
+
+const bundledSkillUrl = new URL("../skills/cookidoo-axi/SKILL.md", import.meta.url);
+const managedFile = ".cookidoo-axi-managed.json";
 
 function errorCode(code) {
   return (error) => {
     assert.equal(error?.code, code);
     return true;
   };
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
 }
 
 async function exists(path) {
@@ -27,170 +43,311 @@ async function exists(path) {
   }
 }
 
-test("Codex setup is idempotent and preserves unrelated project hooks", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "cookidoo-axi-setup-test-"));
+async function fixture(t, suffix = "") {
+  const created = await mkdtemp(join(tmpdir(), `cookidoo-axi-skill-test-${suffix}`));
+  const root = await realpath(created);
   t.after(() => rm(root, { recursive: true, force: true }));
-  const hooksPath = join(root, ".codex", "hooks.json");
-  const skillPath = join(root, ".agents", "skills", "cookidoo-axi", "SKILL.md");
-  await mkdir(join(root, ".codex"), { recursive: true });
-  const original = {
-    customTopLevel: { preserved: true },
-    hooks: {
-      SessionStart: [{
-        matcher: "startup",
-        customGroupField: "preserved",
-        hooks: [{ type: "command", command: "user-owned-command", statusMessage: "User hook" }],
-      }],
-      PreToolUse: [{ matcher: "*", hooks: [{ type: "command", command: "user-policy" }] }],
-    },
-  };
-  await writeFile(hooksPath, `${JSON.stringify(original, null, 2)}\n`, "utf8");
-  const executablePath = join(root, "bin", "cookidoo'axi");
+  const skillsDirectory = join(root, "skills root's");
+  await mkdir(skillsDirectory);
+  return { root, skillsDirectory, skillDirectory: join(skillsDirectory, "cookidoo-axi") };
+}
 
-  const first = await installCodexIntegration({ directory: root, executablePath });
-  const second = await installCodexIntegration({ directory: root, executablePath });
+function shellArgv(command) {
+  const output = execFileSync("/bin/sh", ["-c", `set -- ${command}\nprintf '%s\\0' "$@"`], {
+    encoding: "utf8",
+  });
+  return output.slice(0, -1).split("\0");
+}
+
+function outputBuffer() {
+  let value = "";
+  return { stream: { write(chunk) { value += String(chunk); } }, read: () => value };
+}
+
+test("skill install copies exact bundled bytes, records ownership, and is idempotent", async (t) => {
+  const { skillsDirectory, skillDirectory } = await fixture(t, "install-");
+  const bundled = await readFile(bundledSkillUrl);
+
+  const first = await installSkill({ skillsDirectory });
   assert.equal(first.result, "installed");
-  assert.equal(second.result, "installed");
-  assert.deepEqual(first.files.sort(), [
-    ".agents/skills/cookidoo-axi/SKILL.md",
-    ".codex/hooks.json",
-  ]);
-  assert.deepEqual(first.codexUiActions, [
-    { input: "/hooks", description: "Review the installed workspace hook in Codex." },
-    { input: "$cookidoo-axi", description: "Invoke the installed Codex skill." },
-  ]);
-  assert.equal(Object.hasOwn(first, "nextCommands"), false);
+  assert.equal(first.skillsDirectory, skillsDirectory);
+  assert.equal(first.skillDirectory, skillDirectory);
+  assert.deepEqual(first.files, ["SKILL.md", managedFile]);
+  assert.deepEqual(first.hash, { algorithm: "sha256", value: sha256(bundled) });
+  assert.deepEqual(first.installer, { name: "cookidoo-axi", version: VERSION });
+  assert.deepEqual(await readFile(join(skillDirectory, "SKILL.md")), bundled);
 
-  const hooks = JSON.parse(await readFile(hooksPath, "utf8"));
-  assert.deepEqual(hooks.customTopLevel, original.customTopLevel);
-  assert.deepEqual(hooks.hooks.PreToolUse, original.hooks.PreToolUse);
-  const userHandlers = hooks.hooks.SessionStart.flatMap(({ hooks }) => hooks)
-    .filter(({ statusMessage }) => statusMessage === "User hook");
-  const generatedHandlers = hooks.hooks.SessionStart.flatMap(({ hooks }) => hooks)
-    .filter(({ statusMessage }) => statusMessage === "Loading cookidoo-axi context [managed:v1]");
-  assert.equal(userHandlers.length, 1);
-  assert.equal(generatedHandlers.length, 1);
-  assert.match(generatedHandlers[0].command, /hook session-start$/u);
-  assert.match(generatedHandlers[0].command, /'"'"'/u);
-  assert.equal(generatedHandlers[0].additionalContextLimit, 1000);
-  assert.equal(generatedHandlers[0].timeout, 3);
+  const manifest = JSON.parse(await readFile(join(skillDirectory, managedFile), "utf8"));
+  assert.deepEqual(manifest, {
+    schemaVersion: 1,
+    name: "cookidoo-axi",
+    hash: { algorithm: "sha256", value: sha256(bundled) },
+    installer: { name: "cookidoo-axi", version: VERSION },
+  });
+  assert.deepEqual(shellArgv(first.removeCommand), [
+    "cookidoo-axi",
+    "skill",
+    "remove",
+    "--skills-directory",
+    skillsDirectory,
+    "--confirm",
+    skillDirectory,
+  ]);
 
-  const skill = await readFile(skillPath, "utf8");
-  assert.match(skill, /^---\nname: cookidoo-axi\n/u);
-  assert.match(skill, /generated-by: cookidoo-axi/u);
-  assert.match(skill, /Never retry a mutation after a timeout or transport failure/u);
-  assert.match(skill, /Do not delete, clear, publish, rate, share, link, or unlink/u);
-  assert.match(skill, /profile get-localized/u);
-  assert.match(skill, /Bare `auth status` is prompt-free/u);
-  assert.match(skill, /reports all record states as not-checked/u);
-  assert.match(skill, /--inspect session\|market\|feed/u);
-  assert.match(skill, /--inspect all.*all three sequentially/u);
-  assert.match(skill, /Always Allow.*executable identified/u);
-  assert.match(skill, /may prompt again if the executable changes/u);
-  assert.match(skill, /trust applies to the exact Node binary, not only this CLI/u);
+  const second = await installSkill({ skillsDirectory });
+  assert.equal(second.result, "already_current");
+  assert.deepEqual(await readdir(skillDirectory).then((entries) => entries.sort()), [
+    managedFile,
+    "SKILL.md",
+  ]);
+  assert.deepEqual(await readFile(join(skillDirectory, "SKILL.md")), bundled);
 });
 
-test("setup refuses to overwrite malformed hooks or an unowned skill", async (t) => {
-  const malformedRoot = await mkdtemp(join(tmpdir(), "cookidoo-axi-setup-malformed-"));
-  t.after(() => rm(malformedRoot, { recursive: true, force: true }));
-  const malformedHooks = join(malformedRoot, ".codex", "hooks.json");
-  await mkdir(join(malformedRoot, ".codex"), { recursive: true });
-  await writeFile(malformedHooks, "{ definitely not json", "utf8");
-  await assert.rejects(
-    installCodexIntegration({ directory: malformedRoot, executablePath: "/opt/cookidoo-axi" }),
-    errorCode("INVALID_HOOKS_FILE"),
-  );
-  assert.equal(await readFile(malformedHooks, "utf8"), "{ definitely not json");
+test("skill install safely updates an unmodified older managed version", async (t) => {
+  const { skillsDirectory, skillDirectory } = await fixture(t, "update-");
+  await installSkill({ skillsDirectory });
+  const oldSkill = Buffer.from("---\nname: cookidoo-axi\ndescription: old fixture\n---\n", "utf8");
+  await writeFile(join(skillDirectory, "SKILL.md"), oldSkill);
+  await writeFile(join(skillDirectory, managedFile), `${JSON.stringify({
+    schemaVersion: 1,
+    name: "cookidoo-axi",
+    hash: { algorithm: "sha256", value: sha256(oldSkill) },
+    installer: { name: "cookidoo-axi", version: "0.0.1" },
+  }, null, 2)}\n`);
 
-  const unownedRoot = await mkdtemp(join(tmpdir(), "cookidoo-axi-setup-unowned-"));
-  t.after(() => rm(unownedRoot, { recursive: true, force: true }));
-  const skillPath = join(unownedRoot, ".agents", "skills", "cookidoo-axi", "SKILL.md");
-  await mkdir(join(unownedRoot, ".agents", "skills", "cookidoo-axi"), { recursive: true });
-  await writeFile(skillPath, "# User-owned Cookidoo instructions\n", "utf8");
-  await assert.rejects(
-    installCodexIntegration({ directory: unownedRoot, executablePath: "/opt/cookidoo-axi" }),
-    errorCode("SKILL_EXISTS"),
+  const result = await installSkill({ skillsDirectory });
+  assert.equal(result.result, "updated");
+  assert.deepEqual(
+    await readFile(join(skillDirectory, "SKILL.md")),
+    await readFile(bundledSkillUrl),
   );
-  assert.equal(await readFile(skillPath, "utf8"), "# User-owned Cookidoo instructions\n");
-  assert.equal(await exists(join(unownedRoot, ".codex", "hooks.json")), false);
+  const manifest = JSON.parse(await readFile(join(skillDirectory, managedFile), "utf8"));
+  assert.equal(manifest.installer.version, VERSION);
+  assert.equal(manifest.hash.value, sha256(await readFile(bundledSkillUrl)));
 });
 
-test("setup removal requires the exact resolved directory and removes only generated entries", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "cookidoo-axi-setup-remove-"));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const hooksPath = join(root, ".codex", "hooks.json");
-  const skillPath = join(root, ".agents", "skills", "cookidoo-axi", "SKILL.md");
-  await mkdir(join(root, ".codex"), { recursive: true });
-  await writeFile(hooksPath, JSON.stringify({
-    hooks: {
-      SessionStart: [{
-        matcher: "startup",
-        hooks: [{ type: "command", command: "user-owned-command", statusMessage: "User hook" }],
-      }],
-    },
-  }), "utf8");
-  await installCodexIntegration({ directory: root, executablePath: "/opt/cookidoo-axi" });
+test("skill removal requires the exact child path and never removes the skills root", async (t) => {
+  const { skillsDirectory, skillDirectory } = await fixture(t, "remove-");
+  const siblingFile = join(skillsDirectory, "user-owned.txt");
+  const siblingDirectory = join(skillsDirectory, "another-skill");
+  await writeFile(siblingFile, "preserve me\n");
+  await mkdir(siblingDirectory);
+  await installSkill({ skillsDirectory });
 
   await assert.rejects(
-    removeCodexIntegration({ directory: root, confirm: `${resolve(root)}/` }),
+    removeSkill({ skillsDirectory, confirm: `${skillDirectory}/` }),
     errorCode("CONFIRMATION_REQUIRED"),
   );
-  assert.equal(await exists(skillPath), true);
+  assert.equal(await exists(join(skillDirectory, "SKILL.md")), true);
 
-  const canonicalRoot = await realpath(root);
-  const removed = await removeCodexIntegration({ directory: root, confirm: canonicalRoot });
+  const removed = await removeSkill({ skillsDirectory, confirm: skillDirectory });
   assert.equal(removed.result, "removed");
-  assert.deepEqual(removed.files.sort(), [
-    ".agents/skills/cookidoo-axi/SKILL.md",
-    ".codex/hooks.json",
-  ]);
-  assert.equal(await exists(skillPath), false);
-  const remainingHooks = JSON.parse(await readFile(hooksPath, "utf8"));
-  const remainingHandlers = remainingHooks.hooks.SessionStart.flatMap(({ hooks }) => hooks);
-  assert.deepEqual(remainingHandlers, [
-    { type: "command", command: "user-owned-command", statusMessage: "User hook" },
-  ]);
+  assert.equal(removed.skillDirectory, skillDirectory);
+  assert.deepEqual(removed.files, ["SKILL.md", managedFile]);
+  assert.equal(await exists(skillDirectory), false);
+  assert.equal(await exists(skillsDirectory), true);
+  assert.equal(await readFile(siblingFile, "utf8"), "preserve me\n");
+  assert.equal(await exists(siblingDirectory), true);
 
-  const again = await removeCodexIntegration({ directory: root, confirm: canonicalRoot });
-  assert.equal(again.result, "already_absent");
-  assert.deepEqual(again.files, []);
-});
-
-test("session-start hook output uses the current hook protocol and contains no credentials", () => {
-  const context = sessionStartContext("/opt/tools/cookidoo-axi");
-  assert.deepEqual(Object.keys(context).sort(), ["continue", "hookSpecificOutput"]);
-  assert.equal(context.continue, true);
-  assert.equal(context.hookSpecificOutput.hookEventName, "SessionStart");
-  assert.match(context.hookSpecificOutput.additionalContext, /macOS Keychain/u);
-  assert.match(context.hookSpecificOutput.additionalContext, /Keychain-free scope/u);
-  assert.match(context.hookSpecificOutput.additionalContext, /profile get-localized/u);
-  assert.match(context.hookSpecificOutput.additionalContext, /Bare `auth status` is prompt-free/u);
-  assert.match(context.hookSpecificOutput.additionalContext, /reports not-checked/u);
-  assert.match(context.hookSpecificOutput.additionalContext, /--inspect all.*all three sequentially/u);
-  assert.match(context.hookSpecificOutput.additionalContext, /Always Allow.*identified/u);
-  assert.match(context.hookSpecificOutput.additionalContext, /trust applies to the exact Node binary/u);
-  assert.doesNotMatch(context.hookSpecificOutput.additionalContext, /password|COOKIDOO_EMAIL/u);
-});
-
-test("setup rejects nonexistent scope directories", async () => {
-  const missing = join(tmpdir(), `cookidoo-axi-does-not-exist-${process.pid}`);
   await assert.rejects(
-    installCodexIntegration({ directory: missing, executablePath: "/opt/cookidoo-axi" }),
-    errorCode("INVALID_DIRECTORY"),
+    removeSkill({ skillsDirectory }),
+    errorCode("CONFIRMATION_REQUIRED"),
+  );
+  const absent = await removeSkill({ skillsDirectory, confirm: skillDirectory });
+  assert.equal(absent.result, "already_absent");
+  assert.deepEqual(absent.files, []);
+  assert.equal(await exists(skillsDirectory), true);
+});
+
+test("skill lifecycle rejects unmanaged, legacy, modified, extra, and invalid targets without writes", async (t) => {
+  const empty = await fixture(t, "empty-unmanaged-");
+  await mkdir(empty.skillDirectory);
+  await assert.rejects(
+    installSkill({ skillsDirectory: empty.skillsDirectory }),
+    errorCode("SKILL_UNMANAGED"),
+  );
+  assert.deepEqual(await readdir(empty.skillDirectory), []);
+
+  const unmanaged = await fixture(t, "unmanaged-");
+  await mkdir(unmanaged.skillDirectory);
+  await writeFile(join(unmanaged.skillDirectory, "SKILL.md"), "# user-owned\n");
+  await assert.rejects(
+    installSkill({ skillsDirectory: unmanaged.skillsDirectory }),
+    errorCode("SKILL_UNMANAGED"),
+  );
+  assert.equal(await readFile(join(unmanaged.skillDirectory, "SKILL.md"), "utf8"), "# user-owned\n");
+  assert.equal(await exists(join(unmanaged.skillDirectory, managedFile)), false);
+
+  const legacy = await fixture(t, "legacy-");
+  await mkdir(legacy.skillDirectory);
+  const legacyContent = "<!-- generated-by: cookidoo-axi -->\n# old\n";
+  await writeFile(join(legacy.skillDirectory, "SKILL.md"), legacyContent);
+  await assert.rejects(
+    installSkill({ skillsDirectory: legacy.skillsDirectory }),
+    errorCode("LEGACY_SKILL_CONFLICT"),
+  );
+  assert.equal(await readFile(join(legacy.skillDirectory, "SKILL.md"), "utf8"), legacyContent);
+
+  const modified = await fixture(t, "modified-");
+  await installSkill({ skillsDirectory: modified.skillsDirectory });
+  await writeFile(join(modified.skillDirectory, "SKILL.md"), "# local edit\n");
+  await assert.rejects(
+    installSkill({ skillsDirectory: modified.skillsDirectory }),
+    errorCode("SKILL_MODIFIED"),
+  );
+  await assert.rejects(
+    removeSkill({ skillsDirectory: modified.skillsDirectory, confirm: modified.skillDirectory }),
+    errorCode("SKILL_MODIFIED"),
+  );
+  assert.equal(await readFile(join(modified.skillDirectory, "SKILL.md"), "utf8"), "# local edit\n");
+
+  const extra = await fixture(t, "extra-");
+  await installSkill({ skillsDirectory: extra.skillsDirectory });
+  await writeFile(join(extra.skillDirectory, "notes.md"), "user-owned\n");
+  await assert.rejects(
+    removeSkill({ skillsDirectory: extra.skillsDirectory, confirm: extra.skillDirectory }),
+    errorCode("SKILL_EXTRA_FILES"),
+  );
+  assert.equal(await readFile(join(extra.skillDirectory, "notes.md"), "utf8"), "user-owned\n");
+  assert.equal(await exists(join(extra.skillDirectory, "SKILL.md")), true);
+
+  const invalid = await fixture(t, "invalid-");
+  await installSkill({ skillsDirectory: invalid.skillsDirectory });
+  await writeFile(join(invalid.skillDirectory, managedFile), "{}\n");
+  await assert.rejects(
+    installSkill({ skillsDirectory: invalid.skillsDirectory }),
+    errorCode("SKILL_MANIFEST_INVALID"),
+  );
+  assert.equal(await readFile(join(invalid.skillDirectory, managedFile), "utf8"), "{}\n");
+});
+
+test("skill lifecycle refuses symlinked target and parent components", async (t) => {
+  const target = await fixture(t, "target-link-");
+  const outside = join(target.root, "outside");
+  await mkdir(outside);
+  await symlink(outside, target.skillDirectory);
+  await assert.rejects(
+    installSkill({ skillsDirectory: target.skillsDirectory }),
+    errorCode("UNSAFE_SKILL_PATH"),
+  );
+  assert.deepEqual(await readdir(outside), []);
+
+  const parent = await fixture(t, "parent-link-");
+  const actual = join(parent.root, "actual");
+  const actualSkills = join(actual, "skills");
+  await mkdir(actualSkills, { recursive: true });
+  const linked = join(parent.root, "linked");
+  await symlink(actual, linked);
+  await assert.rejects(
+    installSkill({ skillsDirectory: join(linked, "skills") }),
+    errorCode("UNSAFE_SKILL_PATH"),
+  );
+  assert.deepEqual(await readdir(actualSkills), []);
+});
+
+test("skill lifecycle requires an existing explicit skills root", async (t) => {
+  const { root } = await fixture(t, "missing-root-");
+  const missing = join(root, "does-not-exist");
+  await assert.rejects(
+    installSkill({ skillsDirectory: missing }),
+    errorCode("SKILLS_DIRECTORY_UNAVAILABLE"),
+  );
+  assert.equal(await exists(missing), false);
+});
+
+test("skill lifecycle resolves a relative root and rejects an empty bundled source", async (t) => {
+  const { skillsDirectory, skillDirectory } = await fixture(t, "relative-");
+  const relativeSkillsDirectory = relative(process.cwd(), skillsDirectory);
+  const installed = await installSkill({ skillsDirectory: relativeSkillsDirectory });
+  assert.equal(installed.skillsDirectory, skillsDirectory);
+  assert.equal(installed.skillDirectory, skillDirectory);
+  assert.equal(isAbsolute(installed.skillsDirectory), true);
+  assert.equal(isAbsolute(installed.skillDirectory), true);
+  await removeSkill({
+    skillsDirectory: relativeSkillsDirectory,
+    confirm: skillDirectory,
+  });
+
+  const emptySkill = join(skillsDirectory, "empty-SKILL.md");
+  await writeFile(emptySkill, "");
+  await assert.rejects(
+    readBundledSkill(emptySkill),
+    errorCode("BUNDLED_SKILL_UNAVAILABLE"),
   );
 });
 
-test("setup refuses symlinked generated parents and cannot write outside scope", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "cookidoo-axi-setup-symlink-"));
-  const outside = await mkdtemp(join(tmpdir(), "cookidoo-axi-setup-outside-"));
-  t.after(() => Promise.all([
-    rm(root, { recursive: true, force: true }),
-    rm(outside, { recursive: true, force: true }),
-  ]));
-  await symlink(outside, join(root, ".codex"));
-  await assert.rejects(
-    installCodexIntegration({ directory: root, executablePath: "/opt/cookidoo-axi" }),
-    errorCode("UNSAFE_SETUP_PATH"),
-  );
-  assert.equal(await exists(join(outside, "hooks.json")), false);
+test("CLI emits structured lifecycle results and legacy commands fail before side effects", async (t) => {
+  const { root, skillsDirectory, skillDirectory } = await fixture(t, "cli-");
+  const stdout = outputBuffer();
+  const stderr = outputBuffer();
+  const installedCode = await run([
+    "skill", "install", "--skills-directory", skillsDirectory, "--output", "json",
+  ], { platform: "darwin", stdout: stdout.stream, stderr: stderr.stream });
+  process.exitCode = undefined;
+  assert.equal(installedCode, 0, stderr.read());
+  const installed = JSON.parse(stdout.read());
+  assert.equal(installed.data.result, "installed");
+  assert.equal(installed.data.skillDirectory, skillDirectory);
+  assert.match(installed.data.removeCommand, /^cookidoo-axi skill remove /u);
+  assert.equal(stderr.read(), "");
+
+  const missingConfirmOut = outputBuffer();
+  const missingConfirmCode = await run([
+    "skill", "remove", "--skills-directory", skillsDirectory, "--output", "json",
+  ], { platform: "darwin", stdout: missingConfirmOut.stream });
+  process.exitCode = undefined;
+  assert.equal(missingConfirmCode, 2);
+  const missingConfirm = JSON.parse(missingConfirmOut.read()).data.error;
+  assert.equal(missingConfirm.code, "CONFIRMATION_REQUIRED");
+  assert.equal(missingConfirm.details.expected, skillDirectory);
+  assert.equal(await exists(join(skillDirectory, "SKILL.md")), true);
+
+  const unsupportedDryRunOut = outputBuffer();
+  const unsupportedDryRunCode = await run([
+    "skill", "remove", "--skills-directory", skillsDirectory,
+    "--confirm", skillDirectory, "--dry-run", "--output", "json",
+  ], { platform: "darwin", stdout: unsupportedDryRunOut.stream });
+  process.exitCode = undefined;
+  assert.equal(unsupportedDryRunCode, 2);
+  const unsupportedDryRun = JSON.parse(unsupportedDryRunOut.read()).data.error;
+  assert.equal(unsupportedDryRun.code, "INVALID_OPTION");
+  assert.equal(unsupportedDryRun.details.flag, "--dry-run");
+  assert.equal(await exists(join(skillDirectory, "SKILL.md")), true);
+
+  const removedOut = outputBuffer();
+  const removedCode = await run([
+    "skill", "remove", "--skills-directory", skillsDirectory,
+    "--confirm", skillDirectory, "--output", "json",
+  ], { platform: "darwin", stdout: removedOut.stream });
+  process.exitCode = undefined;
+  assert.equal(removedCode, 0);
+  assert.equal(JSON.parse(removedOut.read()).data.result, "removed");
+  assert.equal(await exists(skillDirectory), false);
+
+  const legacyRoot = join(root, "legacy untouched");
+  await mkdir(legacyRoot);
+  for (const argv of [
+    ["setup", "codex", "--directory", legacyRoot, "--output", "json"],
+    ["setup", "remove", "--directory", legacyRoot, "--confirm", legacyRoot, "--output", "json"],
+    ["hook", "session-start", "--output", "json"],
+  ]) {
+    const legacyOut = outputBuffer();
+    const code = await run(argv, { platform: "darwin", stdout: legacyOut.stream });
+    process.exitCode = undefined;
+    assert.equal(code, 2);
+    const error = JSON.parse(legacyOut.read()).data.error;
+    assert.equal(error.code, "LEGACY_COMMAND_REMOVED");
+    assert.match(error.suggestions[0], /^cookidoo-axi skill install|^cookidoo-axi skill remove/u);
+    assert.deepEqual(await readdir(legacyRoot), []);
+  }
+
+  const missingRootOut = outputBuffer();
+  const missingRootCode = await run([
+    "skill", "install", "--skills-directory", join(root, "missing"), "--output", "json",
+  ], { platform: "darwin", stdout: missingRootOut.stream });
+  process.exitCode = undefined;
+  assert.equal(missingRootCode, 1);
+  const missingRootError = JSON.parse(missingRootOut.read()).data.error;
+  assert.equal(missingRootError.code, "SKILLS_DIRECTORY_UNAVAILABLE");
+  assert.equal(missingRootError.category, "operational");
 });

@@ -159,8 +159,8 @@ test("focused utility help provides two realistic examples for only that command
     ["auth", "remove"],
     ["operation", "list"],
     ["operation", "describe"],
-    ["setup", "codex"],
-    ["setup", "remove"],
+    ["skill", "install"],
+    ["skill", "remove"],
     ["created", "publish"],
     ["created", "unpublish"],
     ["created", "import"],
@@ -195,13 +195,32 @@ test("every ordinary API group help level provides two or three scoped examples"
 });
 
 test("utility group help keeps all examples scoped to the requested group", () => {
-  for (const path of [["auth"], ["operation"], ["setup"]]) {
+  for (const path of [["auth"], ["operation"], ["skill"]]) {
     const examples = groupHelp(path, operations).split("\n")
       .filter((line) => line.startsWith("  cookidoo-axi "));
     assert.ok(examples.length >= 2 && examples.length <= 3, path.join(" "));
     assert.ok(examples.every((line) =>
       line.startsWith(`  cookidoo-axi ${path.join(" ")} `)), path.join(" "));
   }
+});
+
+test("skill help requires an explicit cross-agent root and exact child confirmation", () => {
+  const root = groupHelp(["skill"], operations);
+  assert.match(root, /--skills-directory <path>/u);
+  assert.match(root, /Codex `.agents\/skills` or Claude Code `.claude\/skills`/u);
+  assert.match(root, /always <skills-directory>\/cookidoo-axi/u);
+  assert.match(root, /No hooks/u);
+  assert.match(root, /API-only safety flags such as --dry-run/u);
+
+  const install = groupHelp(["skill", "install"], operations);
+  assert.match(install, /exact bundled SKILL\.md/u);
+  assert.match(install, /SHA-256/u);
+  assert.match(install, /unmanaged, modified, legacy, symlinked/u);
+
+  const remove = groupHelp(["skill", "remove"], operations);
+  assert.match(remove, /--confirm <absolute-skill-directory>/u);
+  assert.match(remove, /skills root is never removed/u);
+  assert.match(remove, /including when the managed child is already absent/u);
 });
 
 test("collection views preserve provider pagination and extension metadata", () => {

@@ -290,24 +290,81 @@ The default format is an interoperability choice, not a claim that TOON is
 smaller for every response or model tokenizer. Agents with a measured JSON
 advantage for their actual trajectory should select `--output json`.
 
-## Optional Codex integration
+## Agent skill integration
 
-Installation is explicit and repo-local:
+The portable agent skill is shared by Codex and Claude Code. It dynamically
+discovers the current CLI surface and deliberately executes only the installed
+Homebrew Formula, never this source checkout.
+
+### From this source repository
+
+The canonical skill is committed at `skills/cookidoo-axi/SKILL.md`. Git-tracked
+discovery links expose that one file without duplicated instructions:
+
+- Codex: `.agents/skills/cookidoo-axi`
+- Claude Code: `.claude/skills/cookidoo-axi`
+
+Opening this repository in either agent is sufficient; do not run a skill
+installer inside this checkout.
+
+For a manual Git-based copy, use a trusted checkout pinned to a release tag or
+commit and copy only `skills/cookidoo-axi/SKILL.md` into the selected agent's
+`cookidoo-axi` skill directory. This is an optional, unmanaged alternative: the
+CLI will not fetch a mutable branch, and `skill install`/`skill remove` will
+refuse to overwrite or remove the manual copy.
+
+### From an installed release
+
+The Homebrew release bundles the same canonical skill. Install it into one or
+both existing, non-symlink skills directories. The directory flag names the
+parent skills root; the command creates its `cookidoo-axi` child:
 
 ```sh
-cookidoo-axi setup codex --directory /absolute/path/to/repo
+mkdir -p /absolute/path/to/repo/.agents/skills
+cookidoo-axi skill install \
+  --skills-directory /absolute/path/to/repo/.agents/skills
+
+mkdir -p /absolute/path/to/repo/.claude/skills
+cookidoo-axi skill install \
+  --skills-directory /absolute/path/to/repo/.claude/skills
 ```
 
-This idempotently installs `.agents/skills/cookidoo-axi/SKILL.md` and a marked
-`SessionStart` handler in `.codex/hooks.json`, preserving unrelated hooks.
-Codex will require trust review for a project hook. Removal deletes only files
-or hook entries carrying this tool's ownership marker and requires the exact
-resolved directory:
+Installation is idempotent for an unchanged managed copy and refuses to
+overwrite an unowned skill. It does not add project hooks. Removal requires the
+exact installed child path and removes only a copy owned by this CLI:
+
+```sh
+cookidoo-axi skill remove \
+  --skills-directory /absolute/path/to/repo/.agents/skills \
+  --confirm /absolute/path/to/repo/.agents/skills/cookidoo-axi
+```
+
+Repeat the removal with `.claude/skills` when both copies were installed.
+
+### Breaking beta migration
+
+The former `setup codex`, `setup remove`, and `hook session-start` integration
+is replaced by the portable `skill` commands and no longer installs a Codex
+hook. Before upgrading a beta installation that used `setup codex`, remove its
+generated skill and hook with that currently installed beta:
 
 ```sh
 cookidoo-axi setup remove --directory /absolute/path/to/repo \
   --confirm /absolute/path/to/repo
+brew update
+brew upgrade aimlesx/tap/cookidoo-axi
 ```
+
+Then use `skill install` for the chosen Codex and/or Claude Code skills root as
+shown above. Repositories that never used the legacy setup require no cleanup.
+If the new installer reports `LEGACY_SKILL_CONFLICT`, it intentionally leaves
+the old integration untouched, including `.codex/hooks.json`. Use the retained
+`0.1.0-beta.1` executable to run the legacy removal, or manually review and
+remove only the legacy `SKILL.md` carrying
+`<!-- generated-by: cookidoo-axi -->` and the
+`SessionStart` handler whose status is
+`Loading cookidoo-axi context [managed:v1]`; preserve every unrelated hook and
+file before running `skill install`.
 
 ## License
 
