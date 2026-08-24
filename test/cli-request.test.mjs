@@ -59,6 +59,52 @@ test("parser has bounded non-interactive defaults and local home/help commands",
   );
   assert.equal(parseInvocation(["created", "--help"], operations).kind, "group-help");
   assert.equal(parseInvocation(["created", "create", "--help"], operations).kind, "operation-help");
+  assert.deepEqual(
+    parseInvocation(["skill", "install", "--skills-directory", "/opt/skills"], operations),
+    { kind: "skill-install", skillsDirectory: "/opt/skills", options: defaultOptions() },
+  );
+  assert.deepEqual(
+    parseInvocation([
+      "skill", "remove", "--skills-directory", "/opt/skills",
+      "--confirm", "/opt/skills/cookidoo-axi",
+    ], operations),
+    {
+      kind: "skill-remove",
+      skillsDirectory: "/opt/skills",
+      options: { ...defaultOptions(), confirm: "/opt/skills/cookidoo-axi" },
+    },
+  );
+  assert.equal(parseInvocation(["skill", "--help"], operations).kind, "group-help");
+  assert.equal(parseInvocation(["skill", "install", "--help"], operations).kind, "group-help");
+  assert.throws(
+    () => parseInvocation(["skill", "install"], operations),
+    usageCode("MISSING_OPTION"),
+  );
+  for (const argv of [
+    ["skill", "install", "--skills-directory", ""],
+    ["skill", "install", "--skills-directory", "bad\npath"],
+    ["skill", "install", "--skills-directory", "/opt/skills", "--dry-run"],
+    ["skill", "install", "--skills-directory", "/opt/skills", "--allow-unverified"],
+    ["skill", "install", "--skills-directory", "/opt/skills", "--target", "x"],
+    ["skill", "install", "--skills-directory", "/opt/skills", "--confirm", "x"],
+    [
+      "skill", "remove", "--skills-directory", "/opt/skills",
+      "--confirm", "/opt/skills/cookidoo-axi", "--dry-run",
+    ],
+  ]) {
+    assert.throws(() => parseInvocation(argv, operations), usageCode("INVALID_OPTION"));
+  }
+  for (const argv of [
+    ["setup", "codex", "--directory", "."],
+    ["setup", "remove", "--directory", "."],
+    ["hook", "session-start"],
+  ]) {
+    assert.throws(() => parseInvocation(argv, operations), (error) => {
+      assert.equal(error?.code, "LEGACY_COMMAND_REMOVED");
+      assert.match(error.suggestion, /^cookidoo-axi skill /u);
+      return true;
+    });
+  }
 });
 
 test("parser resolves friendly and raw operation routes with typed flags", () => {
@@ -179,7 +225,10 @@ test("parser classifies and names unexpected flags and positional arguments", ()
   for (const { argv, argument } of [
     { argv: ["recipe", "get", "r123", "unexpected"], argument: "unexpected" },
     { argv: ["auth", "status", "unexpected"], argument: "unexpected" },
-    { argv: ["setup", "codex", "unexpected"], argument: "unexpected" },
+    {
+      argv: ["skill", "install", "--skills-directory", "/opt/skills", "unexpected"],
+      argument: "unexpected",
+    },
   ]) {
     assert.throws(
       () => parseInvocation(argv, operations),

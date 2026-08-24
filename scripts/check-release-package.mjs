@@ -16,6 +16,7 @@ export const REQUIRED_RELEASE_PATHS = Object.freeze([
   "dist/generated/openapi-manifest.json",
   "homebrew-package-lock.json",
   "package.json",
+  "skills/cookidoo-axi/SKILL.md",
 ]);
 
 const ROOT_FILES = new Set([
@@ -363,7 +364,11 @@ function forbiddenPathReason(archivePath) {
 }
 
 function isAllowedReleasePath(archivePath) {
-  if (ROOT_FILES.has(archivePath) || archivePath === "bin/cookidoo-axi.mjs") return true;
+  if (
+    ROOT_FILES.has(archivePath)
+    || archivePath === "bin/cookidoo-axi.mjs"
+    || archivePath === "skills/cookidoo-axi/SKILL.md"
+  ) return true;
   if (!archivePath.startsWith("dist/")) return false;
   return [".cjs", ".cjs.map", ".d.ts", ".d.ts.map", ".js", ".js.map", ".json", ".mjs", ".mjs.map"].some(
     (suffix) => archivePath.endsWith(suffix),

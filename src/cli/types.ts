@@ -96,6 +96,5 @@ export type ParsedInvocation =
   | { kind: "auth-login"; options: GlobalOptions }
   | { kind: "auth-remove"; options: GlobalOptions }
   | { kind: "auth-clear-session"; options: GlobalOptions }
-  | { kind: "setup-codex"; directory: string; options: GlobalOptions }
-  | { kind: "setup-remove"; directory: string; options: GlobalOptions }
-  | { kind: "hook-session-start"; options: GlobalOptions };
+  | { kind: "skill-install"; skillsDirectory: string; options: GlobalOptions }
+  | { kind: "skill-remove"; skillsDirectory: string; options: GlobalOptions };

@@ -58,7 +58,7 @@ import {
   type NextCommandInput,
   type TextOutputStream,
 } from "./output/index.js";
-import { installCodexIntegration, removeCodexIntegration, sessionStartContext } from "./setup.js";
+import { installSkill, removeSkill } from "./setup.js";
 import { AuthError } from "./auth/errors.js";
 import { VERSION } from "./version.js";
 
@@ -103,9 +103,6 @@ export async function run(
         return 0;
       case "operation-help":
         writeText(operationHelp(invocation.operation), stdout);
-        return 0;
-      case "hook-session-start":
-        stdout.write(`${JSON.stringify(sessionStartContext(executablePath(dependencies)))}\n`);
         return 0;
       case "home":
         emitHome(
@@ -287,26 +284,31 @@ export async function run(
         });
         return 0;
       }
-      case "setup-codex": {
-        const result = await installCodexIntegration({
-          directory: invocation.directory,
-          executablePath: executablePath(dependencies),
+      case "skill-install": {
+        const result = await installSkill({
+          skillsDirectory: invocation.skillsDirectory,
         });
         emitDetail(result, invocation.options, stdout, {
-          command: "cookidoo-axi setup codex",
+          command: renderUtilityCommand([
+            ...commandLiterals(["cookidoo-axi", "skill", "install", "--skills-directory"]),
+            commandArgument(invocation.skillsDirectory),
+          ], invocation.options),
           allowFullCommand: false,
         });
         return 0;
       }
-      case "setup-remove": {
-        const result = await removeCodexIntegration({
-          directory: invocation.directory,
+      case "skill-remove": {
+        const result = await removeSkill({
+          skillsDirectory: invocation.skillsDirectory,
           ...(invocation.options.confirm === undefined
             ? {}
             : { confirm: invocation.options.confirm }),
         });
         emitDetail(result, invocation.options, stdout, {
-          command: "cookidoo-axi setup remove",
+          command: renderUtilityCommand([
+            ...commandLiterals(["cookidoo-axi", "skill", "remove", "--skills-directory"]),
+            commandArgument(invocation.skillsDirectory),
+          ], invocation.options),
           allowFullCommand: false,
         });
         return 0;

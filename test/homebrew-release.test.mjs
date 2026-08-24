@@ -44,6 +44,7 @@ function writeFixturePackage(root, overrides = {}, extraFiles = {}) {
       "NOTICE",
       "README.md",
       "SECURITY.md",
+      "skills/cookidoo-axi/SKILL.md",
       "THIRD_PARTY_NOTICES.md",
       ...Object.keys(extraFiles),
     ],
@@ -61,6 +62,11 @@ function writeFixturePackage(root, overrides = {}, extraFiles = {}) {
   writeFileSync(join(packageRoot, "NOTICE"), "Notice\n");
   writeFileSync(join(packageRoot, "README.md"), "# Fixture\n");
   writeFileSync(join(packageRoot, "SECURITY.md"), "# Security policy\n");
+  mkdirSync(join(packageRoot, "skills/cookidoo-axi"), { recursive: true });
+  writeFileSync(
+    join(packageRoot, "skills/cookidoo-axi/SKILL.md"),
+    "---\nname: cookidoo-axi\ndescription: Fixture skill.\n---\n",
+  );
   writeFileSync(join(packageRoot, "THIRD_PARTY_NOTICES.md"), "# Third-party notices\n");
 
   for (const [relativePath, contents] of Object.entries(extraFiles)) {
@@ -115,6 +121,7 @@ function copyReleaseProject(workspace) {
     "NOTICE",
     "README.md",
     "SECURITY.md",
+    "skills",
     "THIRD_PARTY_NOTICES.md",
     "homebrew-package-lock.json",
     "package-lock.json",
@@ -179,6 +186,19 @@ test("refuses a stale same-version bundle without overwriting it", (t) => {
   assert.deepEqual(readFileSync(firstReport.formula), formulaBefore);
 });
 
+test("packs the canonical agent skill byte-for-byte and nonempty", (t) => {
+  const workspace = makeWorkspace(t);
+  const { artifact } = npmPack(workspace, projectRoot);
+  const canonicalSkill = readFileSync(join(projectRoot, "skills/cookidoo-axi/SKILL.md"));
+  const packedSkill = execFileSync(
+    "tar",
+    ["-xOzf", artifact, "package/skills/cookidoo-axi/SKILL.md"],
+  );
+
+  assert.ok(canonicalSkill.length > 0);
+  assert.deepEqual(packedSkill, canonicalSkill);
+});
+
 test("generates an immutable, macOS-only Homebrew Formula from an npm pack artifact", (t) => {
   const workspace = makeWorkspace(t);
   const { artifact, metadataPath } = npmPack(workspace, projectRoot);
@@ -193,6 +213,9 @@ test("generates an immutable, macOS-only Homebrew Formula from an npm pack artif
   assert.equal(result.status, 0, result.stderr);
   const report = JSON.parse(result.stdout);
   const sha256 = createHash("sha256").update(readFileSync(artifact)).digest("hex");
+  const skillSha256 = createHash("sha256")
+    .update(readFileSync(join(projectRoot, "skills/cookidoo-axi/SKILL.md")))
+    .digest("hex");
   const checksums = join(dirname(artifact), "SHA256SUMS");
   assert.deepEqual(report, {
     artifact,
@@ -209,6 +232,7 @@ test("generates an immutable, macOS-only Homebrew Formula from an npm pack artif
   });
 
   const formula = readFileSync(output, "utf8");
+  assert.match(formula, /^require "digest"\n/u);
   assert.match(
     formula,
     new RegExp(`url "https://github\\.com/example/cookidoo-axi/releases/download/v${projectPackage.version}/cookidoo-axi-${projectPackage.version}\\.tgz"`, "u"),
@@ -221,7 +245,10 @@ test("generates an immutable, macOS-only Homebrew Formula from an npm pack artif
   assert.match(formula, /cp "homebrew-package-lock\.json", "package-lock\.json"/u);
   assert.match(formula, /node_bin = formula_opt_bin\("node@24"\)/u);
   assert.match(formula, /system node_bin\/"npm", "ci", \*std_npm_args\(prefix: false\), "--omit=dev"/u);
-  assert.match(formula, /libexec\.install "bin", "dist", "node_modules"/u);
+  assert.match(
+    formula,
+    /libexec\.install "bin", "dist", "node_modules", "package\.json", "skills"/u,
+  );
   assert.match(formula, /libexec\.install "LICENSE", "NOTICE", "README\.md", "SECURITY\.md"/u);
   assert.match(formula, /#!#\{node_bin\}\/node --use-system-ca/u);
   assert.match(formula, /node = formula_opt_bin\("node@24"\)\/"node"/u);
@@ -231,6 +258,13 @@ test("generates an immutable, macOS-only Homebrew Formula from an npm pack artif
     /assert_equal "#!#\{node\} --use-system-ca\\n", File\.open\(libexec\/"bin\/cookidoo-axi\.mjs", &:gets\)/u,
   );
   assert.match(formula, /assert_equal "#\{version\}\\n", shell_output/u);
+  assert.match(formula, /skill = libexec\/"skills\/cookidoo-axi\/SKILL\.md"/u);
+  assert.match(formula, /assert_predicate skill, :file\?/u);
+  assert.match(formula, /assert_operator skill\.size, :>, 0/u);
+  assert.match(
+    formula,
+    new RegExp(`assert_equal "${skillSha256}", Digest::SHA256\\.file\\(skill\\)\\.hexdigest`, "u"),
+  );
   assert.match(formula, /auth doctor --output json/u);
   assert.match(formula, /assert_equal 0, doctor\.fetch\("keychainRecordsRead"\)/u);
   assert.match(formula, /assert_equal "arm64", doctor\.fetch\("architecture"\)/u);

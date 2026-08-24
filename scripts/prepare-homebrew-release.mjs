@@ -331,6 +331,7 @@ function validateArtifact(artifactPath, npmMetadata, expectedCompiledPaths) {
     "package/bin/cookidoo-axi.mjs",
     "package/dist/cli.js",
     "package/LICENSE",
+    "package/skills/cookidoo-axi/SKILL.md",
   ]) {
     requireSingleEntry(entries, required);
   }
@@ -361,11 +362,19 @@ function validateArtifact(artifactPath, npmMetadata, expectedCompiledPaths) {
     expectedCompiledPaths,
   );
   const sha256 = createHash("sha256").update(artifactBuffer).digest("hex");
-  return { metadata, sha256 };
+  const skill = extractArchiveFile(
+    artifactPath,
+    "package/skills/cookidoo-axi/SKILL.md",
+    "artifact canonical agent skill",
+  );
+  const skillSha256 = createHash("sha256").update(skill, "utf8").digest("hex");
+  return { metadata, sha256, skillSha256 };
 }
 
-function renderFormula({ repository, version, artifactFilename, sha256 }) {
-  return `class CookidooAxi < Formula
+function renderFormula({ repository, version, artifactFilename, sha256, skillSha256 }) {
+  return `require "digest"
+
+class CookidooAxi < Formula
   desc "Agent-friendly CLI for the unofficial Cookidoo API"
   homepage "https://github.com/${repository}"
   url "https://github.com/${repository}/releases/download/v${version}/${artifactFilename}"
@@ -384,7 +393,7 @@ function renderFormula({ repository, version, artifactFilename, sha256 }) {
 
     launcher = buildpath/"bin/cookidoo-axi.mjs"
     inreplace launcher, "#!/usr/bin/env node", "#!#{node_bin}/node --use-system-ca"
-    libexec.install "bin", "dist", "node_modules", "package.json"
+    libexec.install "bin", "dist", "node_modules", "package.json", "skills"
     libexec.install "LICENSE", "NOTICE", "README.md", "SECURITY.md", "THIRD_PARTY_NOTICES.md"
     bin.install_symlink libexec/"bin/cookidoo-axi.mjs" => "cookidoo-axi"
   end
@@ -394,6 +403,10 @@ function renderFormula({ repository, version, artifactFilename, sha256 }) {
     assert_match(/^v24\\./, shell_output("#{node} --version"))
     assert_equal "#!#{node} --use-system-ca\\n", File.open(libexec/"bin/cookidoo-axi.mjs", &:gets)
     assert_equal "#{version}\\n", shell_output("#{bin}/cookidoo-axi --version")
+    skill = libexec/"skills/cookidoo-axi/SKILL.md"
+    assert_predicate skill, :file?
+    assert_operator skill.size, :>, 0
+    assert_equal "${skillSha256}", Digest::SHA256.file(skill).hexdigest
 
     doctor = JSON.parse(shell_output("#{bin}/cookidoo-axi auth doctor --output json")).fetch("data")
     assert_equal "loaded", doctor.fetch("keychainBinding")
@@ -487,6 +500,7 @@ function main(argv) {
   let metadataStatus;
   let metadata;
   let sha256;
+  let skillSha256;
   let status;
   let checksumsStatus;
   try {
@@ -530,7 +544,7 @@ function main(argv) {
       }
     }
 
-    ({ metadata, sha256 } = candidateValidation);
+    ({ metadata, sha256, skillSha256 } = candidateValidation);
     checksumsStatus = writeCreateOrIdentical(
       checksumsPath,
       `${sha256}  ${basename(artifactPath)}\n`,
@@ -541,6 +555,7 @@ function main(argv) {
       version: metadata.version,
       artifactFilename: basename(artifactPath),
       sha256,
+      skillSha256,
     });
     status = writeFormula(outputPath, formula);
   } catch (error) {

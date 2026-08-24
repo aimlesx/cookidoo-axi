@@ -59,9 +59,15 @@ export function parseInvocation(
   }
 
   if (remaining[0] === "auth") return parseAuth(remaining.slice(1), options);
-  if (remaining[0] === "setup") return parseSetup(remaining.slice(1), options);
-  if (remaining[0] === "hook" && remaining[1] === "session-start" && remaining.length === 2) {
-    return { kind: "hook-session-start", options };
+  if (remaining[0] === "skill") return parseSkill(remaining.slice(1), options);
+  if (remaining[0] === "setup") throw legacySetupCommand(remaining);
+  if (remaining[0] === "hook" && remaining[1] === "session-start") {
+    throw new UsageError({
+      code: "LEGACY_COMMAND_REMOVED",
+      message: "The legacy `cookidoo-axi hook session-start` integration has been removed; Agent Skills no longer require a session hook.",
+      suggestion: "cookidoo-axi skill install --skills-directory <path>",
+      details: { replacement: "cookidoo-axi skill install --skills-directory <path>" },
+    });
   }
   if (remaining[0] === "operation") {
     return parseOperationMeta(remaining.slice(1), options, operations);
@@ -90,21 +96,88 @@ export function parseInvocation(
   return parseOperationArgs(operation, remaining.slice(operation.command.length), options, false);
 }
 
-function parseSetup(args: string[], options: GlobalOptions): ParsedInvocation {
+function parseSkill(args: string[], options: GlobalOptions): ParsedInvocation {
   if (args.length === 0 || (args.length === 1 && isHelp(args[0]))) {
-    return { kind: "group-help", group: ["setup"], options };
+    return { kind: "group-help", group: ["skill"], options };
   }
   const command = args[0] as string;
-  let directory = ".";
+  if (!["install", "remove"].includes(command)) {
+    throw new UsageError({
+      code: "UNKNOWN_COMMAND",
+      message: `Unknown skill command: ${command}`,
+      suggestions: [
+        "cookidoo-axi skill install --skills-directory <path>",
+        "cookidoo-axi skill remove --skills-directory <path> --confirm <absolute-skill-directory>",
+      ],
+      details: { subcommand: command },
+    });
+  }
+  if (args.length === 2 && isHelp(args[1])) {
+    return { kind: "group-help", group: ["skill", command], options };
+  }
+  let skillsDirectory: string | undefined;
   for (let index = 1; index < args.length; index += 1) {
     const token = args[index] as string;
-    if (token === "--directory") directory = requireValue(args, ++index, token);
-    else if (isHelp(token)) return { kind: "group-help", group: ["setup", command], options };
-    else throw unexpectedToken(token, ["--directory", "--confirm", "--help"]);
+    if (token === "--skills-directory") {
+      if (skillsDirectory !== undefined) {
+        throw new UsageError("INVALID_OPTION", "--skills-directory may be supplied only once");
+      }
+      skillsDirectory = requireValue(args, ++index, token);
+    } else if (isHelp(token)) {
+      return { kind: "group-help", group: ["skill", command], options };
+    } else {
+      throw unexpectedToken(token, ["--skills-directory", "--confirm", "--help"]);
+    }
   }
-  if (command === "codex") return { kind: "setup-codex", directory, options };
-  if (command === "remove") return { kind: "setup-remove", directory, options };
-  throw new UsageError("UNKNOWN_COMMAND", `Unknown setup command: ${command}`);
+  if (skillsDirectory === undefined) {
+    throw new UsageError({
+      code: "MISSING_OPTION",
+      message: `skill ${command} requires --skills-directory <path>`,
+      suggestion: `cookidoo-axi skill ${command} --skills-directory <path>${command === "remove" ? " --confirm <absolute-skill-directory>" : ""}`,
+      details: { flag: "--skills-directory" },
+    });
+  }
+  if (skillsDirectory.length === 0 || /[\u0000-\u001f\u007f]/u.test(skillsDirectory)) {
+    throw new UsageError({
+      code: "INVALID_OPTION",
+      message: "--skills-directory must be a nonempty path without control characters",
+      suggestion: `cookidoo-axi skill ${command} --skills-directory <path>${command === "remove" ? " --confirm <absolute-skill-directory>" : ""}`,
+      details: { flag: "--skills-directory" },
+    });
+  }
+  const unsupportedSafetyFlag = options.dryRun
+    ? "--dry-run"
+    : options.allowUnverified
+      ? "--allow-unverified"
+      : options.target !== undefined
+        ? "--target"
+        : command === "install" && options.confirm !== undefined
+          ? "--confirm"
+          : undefined;
+  if (unsupportedSafetyFlag !== undefined) {
+    throw new UsageError({
+      code: "INVALID_OPTION",
+      message: `${unsupportedSafetyFlag} is not supported by skill ${command}`,
+      suggestion: `cookidoo-axi skill ${command} --skills-directory <path>${command === "remove" ? " --confirm <absolute-skill-directory>" : ""}`,
+      details: { flag: unsupportedSafetyFlag, command: `skill ${command}` },
+    });
+  }
+  return command === "install"
+    ? { kind: "skill-install", skillsDirectory, options }
+    : { kind: "skill-remove", skillsDirectory, options };
+}
+
+function legacySetupCommand(args: readonly string[]): UsageError {
+  const removing = args[1] === "remove";
+  const replacement = removing
+    ? "cookidoo-axi skill remove --skills-directory <path> --confirm <absolute-skill-directory>"
+    : "cookidoo-axi skill install --skills-directory <path>";
+  return new UsageError({
+    code: "LEGACY_COMMAND_REMOVED",
+    message: `The legacy \`${args.slice(0, 2).join(" ")}\` integration has been removed. Use \`${replacement}\`.`,
+    suggestion: replacement,
+    details: { replacement },
+  });
 }
 
 function parseAuth(args: string[], options: GlobalOptions): ParsedInvocation {
