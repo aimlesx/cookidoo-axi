@@ -7,6 +7,7 @@ import {
   AuthError,
   createCookieFetch,
   DEFAULT_AUTH_PROFILE,
+  isAuthError,
   KeychainAuthStore,
   loginStoredProfile,
   normalizeAuthProfile,
@@ -791,7 +792,8 @@ async function requestHeaders(options: RequestHeaderOptions): Promise<Headers> {
       profile: options.profile,
       signal: attempt.signal,
     });
-  } catch {
+  } catch (error) {
+    if (isAuthError(error)) throw error;
     throw new ApiError({
       code: "BASIC_CREDENTIALS_UNAVAILABLE",
       message: "Feed credentials could not be loaded.",

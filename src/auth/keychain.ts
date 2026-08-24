@@ -33,6 +33,8 @@ export interface DeletedAuthProfile {
 }
 
 export interface KeychainAdapter {
+  /** Fail without touching Keychain when the current process cannot access it safely. */
+  assertAccessAllowed?(): void;
   getSecret(service: string, account: string, signal?: AbortSignal): Promise<string | undefined>;
   setSecret(service: string, account: string, secret: string, signal?: AbortSignal): Promise<void>;
   deleteSecret(service: string, account: string, signal?: AbortSignal): Promise<boolean>;
@@ -63,6 +65,7 @@ export type KeyringModuleLoader = () => Promise<KeyringModule>;
 
 export interface MacOSKeychainAdapterOptions {
   readonly platform?: NodeJS.Platform;
+  readonly environment?: NodeJS.ProcessEnv;
   readonly loadKeyring?: KeyringModuleLoader;
 }
 
@@ -159,10 +162,22 @@ export function createMacOSKeychainAdapter(
   options: MacOSKeychainAdapterOptions = {},
 ): KeychainAdapter {
   assertDarwin(options.platform ?? process.platform);
+  const environment = options.environment ?? process.env;
   const loadKeyring = options.loadKeyring ?? loadDefaultKeyring;
   let modulePromise: Promise<KeyringModule> | undefined;
 
+  const assertAccessAllowed = (): void => {
+    if (environment.CODEX_SANDBOX === "seatbelt") {
+      throw new AuthError({
+        code: "KEYCHAIN_SANDBOXED",
+        message: "macOS Keychain access is unavailable inside the Codex Seatbelt sandbox.",
+        suggestion: "Rerun the same cookidoo-axi command outside the sandbox with command-scoped approval; do not re-import credentials.",
+      });
+    }
+  };
+
   const load = async (): Promise<KeyringModule> => {
+    assertAccessAllowed();
     modulePromise ??= loadKeyring();
     try {
       return await modulePromise;
@@ -177,6 +192,8 @@ export function createMacOSKeychainAdapter(
   };
 
   return {
+    assertAccessAllowed,
+
     async getSecret(service, account, signal) {
       const keyring = await load();
       try {
@@ -287,6 +304,11 @@ export class KeychainAuthStore {
 
   constructor(adapter: KeychainAdapter = createMacOSKeychainAdapter()) {
     this.adapter = adapter;
+  }
+
+  /** Fail before acquiring credential material when Keychain is sandbox-isolated. */
+  assertAccessAllowed(): void {
+    this.adapter.assertAccessAllowed?.();
   }
 
   /** Validate and normalize market credentials without reading or writing Keychain. */

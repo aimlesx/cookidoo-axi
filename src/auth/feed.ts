@@ -30,6 +30,11 @@ function validateFeedCredentials(credentials: CookidooCredentials): CookidooCred
 export class FeedCredentialStore {
   constructor(readonly adapter: KeychainAdapter = createMacOSKeychainAdapter()) {}
 
+  /** Fail before acquiring credential material when Keychain is sandbox-isolated. */
+  assertAccessAllowed(): void {
+    this.adapter.assertAccessAllowed?.();
+  }
+
   /** Validate and normalize feed credentials without reading or writing Keychain. */
   validateCredentials(credentials: CookidooCredentials): CookidooCredentials {
     return validateFeedCredentials(credentials);

@@ -181,6 +181,14 @@ function legacySetupCommand(args: readonly string[]): UsageError {
 }
 
 function parseAuth(args: string[], options: GlobalOptions): ParsedInvocation {
+  if (options.dryRun) {
+    throw new UsageError({
+      code: "INVALID_OPTION",
+      message: "--dry-run is not supported by auth commands.",
+      suggestion: "Remove --dry-run; only API operations provide an auth-free dry-run mode.",
+      details: { flag: "--dry-run", command: "auth" },
+    });
+  }
   if (args.length === 0 || (args.length === 1 && isHelp(args[0]))) {
     return { kind: "group-help", group: ["auth"], options };
   }

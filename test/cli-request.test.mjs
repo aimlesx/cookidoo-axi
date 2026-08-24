@@ -42,6 +42,25 @@ test("parser has bounded non-interactive defaults and local home/help commands",
     parseInvocation(["auth", "status", "--inspect", "session"], operations).inspection,
     "session",
   );
+  for (const argv of [
+    ["auth", "--dry-run"],
+    ["--dry-run", "auth", "doctor"],
+    ["auth", "status", "--dry-run"],
+    ["auth", "login", "--dry-run"],
+    ["auth", "import-env", "--dry-run"],
+    ["auth", "import-feed-env", "--dry-run"],
+    ["auth", "clear-session", "--dry-run"],
+    ["auth", "remove", "--dry-run"],
+  ]) {
+    assert.throws(() => parseInvocation(argv, operations), (error) => {
+      assert.equal(error?.name, "UsageError");
+      assert.equal(error?.code, "INVALID_OPTION");
+      assert.equal(error?.exitCode, 2);
+      assert.deepEqual(error?.details, { flag: "--dry-run", command: "auth" });
+      assert.match(error?.suggestion ?? "", /only API operations/u);
+      return true;
+    });
+  }
   assert.throws(
     () => parseInvocation(["auth", "status", "--inspect", "unknown"], operations),
     usageCode("INVALID_OPTION"),

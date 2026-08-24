@@ -75,4 +75,7 @@ test("README documents source aliases, release installation, and beta migration"
   assert.match(readme, /retained[\s]+`0\.1\.0-beta\.1` executable/u);
   assert.match(readme, /LEGACY_SKILL_CONFLICT/u);
   assert.match(readme, /including `\.codex\/hooks\.json`/u);
+  assert.match(readme, /CODEX_SANDBOX=seatbelt/u);
+  assert.match(readme, /KEYCHAIN_SANDBOXED/u);
+  assert.match(readme, /Do not re-import credentials in response to[\s]+a sandboxed failure/u);
 });
