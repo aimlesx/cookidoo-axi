@@ -137,6 +137,15 @@ test("focused examples expose exact constraints and a valid ISO feed cursor", ()
   const cursor = feed.match(/  cookidoo-axi feed page --page-before '([^']+)'/u)?.[1];
   assert.equal(cursor, "2026-08-17T00:00:00Z");
   assert.equal(new Date(cursor).toISOString(), "2026-08-17T00:00:00.000Z");
+
+  const update = operationHelp(operation("patchCreatedRecipe"));
+  assert.match(update, /--infer-thermomix-settings/u);
+  assert.match(update, /2 s\/obr\. 6/u);
+  assert.match(update, /matched STEP spans/u);
+  assert.match(update, /preserves unrelated TTS and non-TTS data/u);
+  assert.match(update, /rejects Varoma, ranges, modes/u);
+  assert.match(update, /not provider limits/u);
+  assert.match(update, /UTF-16 indexes/u);
 });
 
 test("operation-list help documents bounded discovery filters", () => {
@@ -384,9 +393,9 @@ test("structured discovery reports effective semantic and conditional safety pol
   assert.deepEqual(operationCatalog(operations).source, {
     generatedFrom: "cookidoo-openapi/openapi.yaml",
     repository: "https://github.com/aimlesx/cookidoo-openapi",
-    commit: "69bb43119b162ad8fea48ddb6a436d2074013972",
+    commit: "6d54f2a8fa79894f4b81dba4d47a52610096d503",
     path: "openapi.yaml",
-    sha256: "d04829c9140ccba4003e0f0ce39883158e73ac8f9e42ae2c8fc365a28b1fa5aa",
+    sha256: "89d0cd4b9e04c2844aebf5d29705f7a992606f3be20a39867e7dd1491be5678d",
   });
   const shoppingCatalog = catalog.find((entry) =>
     entry.operationId === "removeRecipesFromShoppingList");
@@ -397,6 +406,7 @@ test("structured discovery reports effective semantic and conditional safety pol
   const patchCatalog = catalog.find((entry) => entry.operationId === "patchCreatedRecipe");
   assert.deepEqual(patchCatalog.risks, ["private-write", "external"]);
   assert.deepEqual(patchCatalog.taskCommands, [
+    "cookidoo-axi created update <customerRecipeId> --instructions <STEP-json> --infer-thermomix-settings",
     "cookidoo-axi created publish <customerRecipeId>",
     "cookidoo-axi created unpublish <customerRecipeId>",
   ]);

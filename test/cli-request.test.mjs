@@ -157,6 +157,15 @@ test("parser resolves friendly and raw operation routes with typed flags", () =>
     { path: "recipeName", value: "Offline fixture", array: false },
     { path: "servingSize", value: "2.5", array: false },
   ]);
+
+  const inferred = parseInvocation([
+    "created", "update", "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    "--instructions", '{"type":"STEP","text":"Miksuj 2 s/obr. 6."}',
+    "--infer-thermomix-settings",
+  ], operations);
+  assert.equal(inferred.kind, "operation");
+  assert.equal(inferred.operationMode, "created-edit");
+  assert.equal(inferred.inferThermomixSettings, true);
 });
 
 test("global safety options remain exact and can appear before or after a command", () => {
@@ -222,6 +231,27 @@ test("parser rejects near-miss flags, bad values, ambiguous body input, and extr
   assert.throws(
     () => parseInvocation(["device", "link", "--target", "fixture\ncontrol"], operations),
     usageCode("INVALID_TARGET"),
+  );
+  assert.throws(
+    () => parseInvocation([
+      "operation", "run", "patchCreatedRecipe", "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "--infer-thermomix-settings",
+    ], operations),
+    usageCode("UNKNOWN_FLAG"),
+  );
+  assert.throws(
+    () => parseInvocation([
+      "created", "update", "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "--infer-thermomix-settings", "--infer-thermomix-settings",
+    ], operations),
+    usageCode("INVALID_OPTION"),
+  );
+  assert.throws(
+    () => parseInvocation([
+      "created", "publish", "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "--infer-thermomix-settings",
+    ], operations),
+    usageCode("UNKNOWN_FLAG"),
   );
 });
 

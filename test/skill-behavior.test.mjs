@@ -174,6 +174,10 @@ test("skill keeps discovery bounded and mutation recovery unambiguous", async ()
   assert.match(compact, /The CLI does not automatically retry mutations/u);
   assert.match(compact, /ambiguous outcome occurs, do not repeat the mutation/u);
   assert.match(compact, /Execute the validated request exactly once/u);
+  assert.match(compact, /created update <id> --infer-thermomix-settings/u);
+  assert.match(compact, /complete replacement `instructions` array/u);
+  assert.match(compact, /Do not infer Varoma, modes, ranges, or ambiguous prose/u);
+  assert.match(compact, /only preload a tappable setting/u);
 });
 
 test("skill crosses the Codex sandbox only for commands that access Keychain items", async () => {

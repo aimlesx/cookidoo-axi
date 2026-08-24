@@ -13,6 +13,10 @@ import { buildRequestBody } from "./cli/input.js";
 import type { ParsedOperationInvocation } from "./cli/types.js";
 import { UsageError } from "./errors.js";
 import {
+  assertValidCreatedRecipeTtsAnnotations,
+  inferCreatedRecipeTtsAnnotations,
+} from "./created-recipe-tts.js";
+import {
   assertSafety,
   type SafetyDecision,
 } from "./safety/policy.js";
@@ -32,10 +36,10 @@ export async function resolveOperationInvocation(
 ): Promise<ResolvedOperationInvocation> {
   const operation = invocation.operation;
   const manifestOperation = operation as unknown as ManifestOperation;
-  const body = await buildRequestBody(
+  let body = await buildRequestBody(
     invocation.bodyInput,
     invocation.bodyFields,
-    operation.requestBody?.required ?? false,
+    (operation.requestBody?.required ?? false) && !invocation.inferThermomixSettings,
   );
   if (
     invocation.operationMode === "created-edit" && isObject(body) &&
@@ -51,6 +55,12 @@ export async function resolveOperationInvocation(
         ],
       },
     );
+  }
+  if (invocation.inferThermomixSettings) {
+    body = inferCreatedRecipeTtsAnnotations(body);
+  }
+  if (operation.operationId === "patchCreatedRecipe") {
+    assertValidCreatedRecipeTtsAnnotations(body);
   }
   const validatedBody = assertValidRequestBody(manifestOperation, body).value;
 

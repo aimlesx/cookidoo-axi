@@ -289,7 +289,7 @@ function parseCreatedVirtual(
   }
   const operation = operations.find((candidate) => candidate.operationId === "patchCreatedRecipe");
   if (!operation) throw new UsageError("MANIFEST_ERROR", "Missing patchCreatedRecipe operation");
-  const parsed = parseOperationArgs(operation, args.slice(2), options, false);
+  const parsed = parseOperationArgs(operation, args.slice(2), options, false, false);
   if (parsed.bodyInput !== undefined || parsed.bodyFields.length > 0) {
     throw new UsageError("CONFLICTING_INPUT", `created ${command} accepts no request-body flags`);
   }
@@ -386,7 +386,8 @@ function parseOperationArgs(
   operation: OperationDescriptor,
   args: string[],
   options: GlobalOptions,
-  rawOperation: boolean
+  rawOperation: boolean,
+  allowFriendlyTaskFlags = true,
 ): ParsedOperationInvocation {
   const pathParameters = operation.parameters.filter(
     (parameter) => parameter.in === "path" && parameter.name !== "lang"
@@ -401,6 +402,8 @@ function parseOperationArgs(
   const bodyFlags: ReadonlyMap<string, { name: string; schema: Record<string, unknown> }> = new Map(
     [...bodyProperties].map(([name, schema]) => [`--${kebab(name)}`, { name, schema }] as const)
   );
+  const supportsThermomixInference = allowFriendlyTaskFlags && !rawOperation &&
+    operation.operationId === "patchCreatedRecipe";
   const allowed = [
     ...queryFlags.keys(),
     ...bodyFlags.keys(),
@@ -410,6 +413,7 @@ function parseOperationArgs(
       : []),
     "--set",
     "--data",
+    ...(supportsThermomixInference ? ["--infer-thermomix-settings"] : []),
     ...GLOBAL_VALUE_FLAGS.keys(),
     ...GLOBAL_BOOLEAN_FLAGS.keys(),
     "--help"
@@ -423,11 +427,19 @@ function parseOperationArgs(
   let bodyInput: string | undefined;
   let pageBeforeUnitWasExplicit = false;
   let pageBeforeUnit: "seconds" | "milliseconds" | undefined;
+  let inferThermomixSettings = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const token = args[index] as string;
     if (!token.startsWith("-")) {
       positionals.push(token);
+      continue;
+    }
+    if (token === "--infer-thermomix-settings" && supportsThermomixInference) {
+      if (inferThermomixSettings) {
+        throw new UsageError("INVALID_OPTION", "--infer-thermomix-settings may be supplied only once");
+      }
+      inferThermomixSettings = true;
       continue;
     }
     if (token === "--data") {
@@ -541,6 +553,7 @@ function parseOperationArgs(
     kind: "operation",
     operation,
     rawOperation,
+    ...(inferThermomixSettings ? { inferThermomixSettings: true as const } : {}),
     ...(!rawOperation && operation.operationId === "patchCreatedRecipe"
       ? { operationMode: "created-edit" as const }
       : {}),

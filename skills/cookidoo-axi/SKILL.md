@@ -141,6 +141,26 @@ Change publication only with guarded `created publish` or `created unpublish`,
 use guarded `created import` for its import-like query mode, and treat shopping
 removals as destructive even when they use POST.
 
+For automatic Thermomix presets in a private created recipe, use only the
+friendly `created update <id> --infer-thermomix-settings` route. First read that
+created recipe and build the complete replacement `instructions` array,
+preserving every unchanged step; the PATCH does not merge individual steps.
+The inference flag requires `instructions` in the same request and recognizes
+only exact Polish fragments such as `2 s/obr. 6`, `40 s/obr. 8`, and
+`5 min/80°C/obr. 3`, plus the explicit `obr. wsteczne <speed>` form for CCW.
+The local inference subset accepts positive time, 1–160°C, and speed 0–10;
+these are conservative inference bounds, not provider limits. Do not infer
+Varoma, modes, ranges, or ambiguous prose. Same-span TTS entries
+are replaced or deduplicated, while unrelated TTS and non-TTS annotations are
+preserved. Inference is capped at 32 settings per step, 128 per request, and the
+1 MB transformed request-body limit. Dry-run and inspect the resulting request
+body; malformed manual TTS
+types or spans fail with `INVALID_TTS_ANNOTATION`. Spans use JavaScript UTF-16
+indexes: Polish BMP text is deterministic, boundaries that split surrogate
+pairs are rejected, and other emoji/non-BMP steps need explicit verification.
+These annotations only preload a tappable setting—the cook still
+reviews and starts the step on the appliance.
+
 The CLI does not automatically retry mutations. If a timeout, lost connection,
 contract failure, or other ambiguous outcome occurs, do not repeat the mutation.
 Follow the returned authoritative reconciliation read, preserve profile and

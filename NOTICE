@@ -6,7 +6,7 @@ their respective owner.
 The API model is derived from the separately maintained MIT-licensed
 `cookidoo-openapi` project at
 https://github.com/aimlesx/cookidoo-openapi, commit
-69bb43119b162ad8fea48ddb6a436d2074013972. The browser-cookie login design was
+6d54f2a8fa79894f4b81dba4d47a52610096d503. The browser-cookie login design was
 informed by the MIT-licensed `@recode-software/cookidoo-api` project;
 `cookidoo-axi` uses its own safety-hardened implementation.
 

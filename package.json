@@ -1,6 +1,6 @@
 {
   "name": "cookidoo-axi",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "description": "An agent-friendly CLI for the unofficial Polish Cookidoo API on Apple Silicon macOS",
   "type": "module",
   "private": true,

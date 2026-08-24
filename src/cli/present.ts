@@ -29,6 +29,7 @@ const TASK_COMMAND_ALIASES: Readonly<Record<string, readonly string[]>> = {
     "cookidoo-axi created import --recipe-url <https-url>",
   ],
   patchCreatedRecipe: [
+    "cookidoo-axi created update <customerRecipeId> --instructions <STEP-json> --infer-thermomix-settings",
     "cookidoo-axi created publish <customerRecipeId>",
     "cookidoo-axi created unpublish <customerRecipeId>",
   ],
@@ -338,6 +339,9 @@ export function safeCommand(invocation: ParsedOperationInvocation): string {
   if (bodyFlags !== null) tokens.push(...bodyFlags);
   if (invocation.bodyInput?.startsWith("@") === true) {
     tokens.push(commandLiteral("--data"), commandArgument(invocation.bodyInput));
+  }
+  if (invocation.inferThermomixSettings) {
+    tokens.push(commandLiteral("--infer-thermomix-settings"));
   }
   tokens.push(commandLiteral("--output"), commandArgument(invocation.options.output));
   tokens.push(commandLiteral("--max-items"), commandArgument(invocation.options.maxItems));

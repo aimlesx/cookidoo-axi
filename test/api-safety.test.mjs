@@ -39,9 +39,9 @@ test("generated manifest exposes every mapped operation exactly once", () => {
   assert.equal(OPENAPI_MANIFEST.server, "https://cookidoo.pl");
   assert.deepEqual(OPENAPI_MANIFEST.source, {
     repository: "https://github.com/aimlesx/cookidoo-openapi",
-    commit: "69bb43119b162ad8fea48ddb6a436d2074013972",
+    commit: "6d54f2a8fa79894f4b81dba4d47a52610096d503",
     path: "openapi.yaml",
-    sha256: "d04829c9140ccba4003e0f0ce39883158e73ac8f9e42ae2c8fc365a28b1fa5aa",
+    sha256: "89d0cd4b9e04c2844aebf5d29705f7a992606f3be20a39867e7dd1491be5678d",
   });
 
   for (const operation of OPENAPI_MANIFEST.operations) {

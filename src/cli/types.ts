@@ -64,6 +64,7 @@ export interface ParsedOperationInvocation {
   kind: "operation";
   operation: OperationDescriptor;
   rawOperation: boolean;
+  inferThermomixSettings?: true;
   operationMode?: "created-edit" | "created-publish" | "created-unpublish" | "created-import";
   pageBeforeUnit?: "seconds" | "milliseconds";
   path: Record<string, string>;
