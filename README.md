@@ -8,7 +8,7 @@ output, and mutation safety in front of the transport.
 It is not affiliated with or supported by Vorwerk, Thermomix, or Cookidoo. Use
 it only with accounts and resources you are authorized to access.
 
-The current `0.1.0-beta.3` line is a Homebrew-distributed beta for Apple
+The current `0.1.0-beta.4` line is a Homebrew-distributed beta for Apple
 Silicon (arm64), tested on macOS 15, and scoped to the Polish Cookidoo
 platform. Treat its API and output contract as pre-stable until a later
 non-prerelease version. Intel Macs, older macOS releases, and other Cookidoo
@@ -231,7 +231,40 @@ cookidoo-axi planning add --recipe-ids r123456 --day-key 2026-08-21 --dry-run
 cookidoo-axi operation run movePlannedRecipe --data @request.json --dry-run
 ```
 
-`--data` accepts inline JSON, `@file`, or `-` for stdin and is capped at 1 MiB.
+For a private created-recipe update, the friendly route can infer tappable
+Thermomix presets from a deliberately small Polish step syntax:
+
+```sh
+cookidoo-axi created update 01ARZ3NDEKTSV4RRFFQ69G5FAV \
+  --instructions '{"type":"STEP","text":"Miksuj 40 s/obr. 8."}' \
+  --instructions '{"type":"STEP","text":"Podgrzewaj 5 min/80°C/obr. 3."}' \
+  --infer-thermomix-settings --dry-run --output json
+```
+
+`--infer-thermomix-settings` is available only on the friendly `created update`
+command. It recognizes integer seconds or minutes, an optional numeric Celsius
+temperature, numeric speed, and the explicit form `obr. wsteczne <speed>` for
+counter-clockwise rotation. Its local inference subset accepts positive time,
+1–160°C, and speed 0–10; these are conservative inference bounds, not asserted
+provider limits. It deliberately does not infer Varoma, modes, ranges, or
+prose-only settings. On a matched text span it replaces or
+deduplicates only a TTS annotation for that same span; unrelated TTS and all
+non-TTS annotations are preserved. Supplying no `instructions` array or finding
+no supported setting is a usage error. Inference is capped at 32 settings per
+step and 128 per request, and the transformed body remains subject to the 1 MB
+request limit.
+
+The supplied `instructions` array is a complete replacement, not a partial
+step patch. Read the current private recipe first, retain every unchanged step,
+then dry-run the complete array. All manually supplied TTS annotations on this
+PATCH are also validated for core types and span bounds. Span offsets use
+JavaScript UTF-16 indexing: ordinary Polish BMP text is deterministic, but
+span boundaries that split an emoji surrogate pair are rejected and other
+non-BMP text still needs explicit verification.
+These annotations preload settings only; they do not start or remotely control
+a Thermomix, and the cook must review and start the step on the appliance.
+
+`--data` accepts inline JSON, `@file`, or `-` for stdin and is capped at 1 MB.
 Search filters use repeatable `--filter key=value`; duplicate emitted query keys
 fail closed. The schema's extensible filter map accepts bounded, safe extension
 names, but their semantics remain opaque. Search pagination is not auto-followed. Feed page

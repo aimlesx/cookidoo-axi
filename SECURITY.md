@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-The only supported release is `0.1.0-beta.3`, on Apple Silicon (arm64) running
+The only supported release is `0.1.0-beta.4`, on Apple Silicon (arm64) running
 macOS 15 or newer. Security fixes are provided only for the newest published
 `0.1.0-beta.x` release until a stable support policy is announced. Intel Macs,
 older macOS releases, source-checkout installations, and other Cookidoo markets

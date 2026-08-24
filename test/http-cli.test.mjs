@@ -733,6 +733,7 @@ test("operation catalog discovers task aliases and every effective safety gate",
   assert.deepEqual(publish.data.map(({ operationId }) => operationId), ["patchCreatedRecipe"]);
   assert.deepEqual(publish.data[0].risks, ["private-write", "external"]);
   assert.deepEqual(publish.data[0].taskCommands, [
+    "cookidoo-axi created update <customerRecipeId> --instructions <STEP-json> --infer-thermomix-settings",
     "cookidoo-axi created publish <customerRecipeId>",
     "cookidoo-axi created unpublish <customerRecipeId>",
   ]);
@@ -856,6 +857,79 @@ test("CLI dry-run is network-free and emits exact publication safety gates", asy
   assert.equal(result.data.safety.authenticationPerformed, false);
   assert.equal(result.data.safety.networkPerformed, false);
   assert.equal(result.data.safety.confirmationTarget, "created-recipe:01ARZ3NDEKTSV4RRFFQ69G5FAV:publish");
+});
+
+test("Thermomix inference dry-run is auth-free, reproducible, and validates raw TTS input", async () => {
+  const customerRecipeId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+  const text = "Miksuj 2 s/obr. 6.";
+  const step = JSON.stringify({ type: "STEP", text });
+  const stdout = outputBuffer();
+  let dispatched = false;
+  const code = await run([
+    "created", "update", customerRecipeId,
+    "--instructions", step,
+    "--infer-thermomix-settings",
+    "--dry-run", "--output", "json",
+  ], {
+    platform: "darwin",
+    stdout: stdout.stream,
+    ...cliStores(),
+    httpExecute: async () => { dispatched = true; throw new Error("must not dispatch"); },
+    fetch: async () => { throw new Error("must not fetch"); },
+  });
+  process.exitCode = undefined;
+  assert.equal(code, 0);
+  assert.equal(dispatched, false);
+  const result = JSON.parse(stdout.read());
+  assert.equal(result.data.safety.authenticationPerformed, false);
+  assert.equal(result.data.safety.networkPerformed, false);
+  assert.equal(result.data.safety.classification.level, "private-write");
+  assert.deepEqual(result.data.request.body.instructions[0].annotations, [{
+    type: "TTS",
+    data: { time: 2, speed: "6" },
+    position: { offset: text.indexOf("2 s/obr. 6"), length: "2 s/obr. 6".length },
+  }]);
+  const executeCommand = result.next.find(({ command }) =>
+    command.startsWith("cookidoo-axi created update"))?.command;
+  assert.match(executeCommand, /--infer-thermomix-settings/u);
+  const parsed = parseInvocation(shellArgv(executeCommand).slice(1), OPENAPI_MANIFEST.operations);
+  assert.equal(parsed.kind, "operation");
+  assert.equal(parsed.inferThermomixSettings, true);
+
+  const missingOut = outputBuffer();
+  const missingCode = await run([
+    "created", "update", customerRecipeId,
+    "--infer-thermomix-settings", "--dry-run", "--output", "json",
+  ], { platform: "darwin", stdout: missingOut.stream, ...cliStores() });
+  process.exitCode = undefined;
+  assert.equal(missingCode, 2);
+  assert.equal(JSON.parse(missingOut.read()).data.error.code, "THERMOMIX_INSTRUCTIONS_REQUIRED");
+
+  const secretText = "SYNTHETIC_RECIPE_TEXT_MUST_NOT_APPEAR";
+  const malformedStep = {
+    type: "STEP",
+    text: secretText,
+    annotations: [{
+      type: "TTS",
+      data: { speed: 3 },
+      position: { offset: 0, length: 1 },
+    }],
+  };
+  for (const bodyArgs of [
+    ["--instructions", JSON.stringify(malformedStep)],
+    ["--data", JSON.stringify({ instructions: [malformedStep] })],
+  ]) {
+    const invalidOut = outputBuffer();
+    const invalidCode = await run([
+      "operation", "run", "patchCreatedRecipe", customerRecipeId,
+      ...bodyArgs, "--dry-run", "--output", "json",
+    ], { platform: "darwin", stdout: invalidOut.stream, ...cliStores() });
+    process.exitCode = undefined;
+    assert.equal(invalidCode, 2);
+    const rendered = invalidOut.read();
+    assert.equal(JSON.parse(rendered).data.error.code, "INVALID_TTS_ANNOTATION");
+    assert.doesNotMatch(rendered, new RegExp(secretText, "u"));
+  }
 });
 
 test("body-driven dry-runs provide a bounded executable trajectory without echoing unsafe payloads", async () => {

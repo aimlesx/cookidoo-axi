@@ -30,7 +30,7 @@ test("release workflow accepts only version tags and pins its release inputs", (
     NODE_VERSION: "24.19.0",
     NPM_VERSION: "11.17.0",
     OPENAPI_REPOSITORY: "aimlesx/cookidoo-openapi",
-    OPENAPI_COMMIT: "69bb43119b162ad8fea48ddb6a436d2074013972",
+    OPENAPI_COMMIT: "6d54f2a8fa79894f4b81dba4d47a52610096d503",
   });
   assert.equal(PROJECT_PACKAGE.packageManager, `npm@${WORKFLOW.env.NPM_VERSION}`);
 

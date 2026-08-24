@@ -9,7 +9,7 @@ const sourcePath = resolve(
 );
 const outputPath = resolve("src/generated/openapi-manifest.json");
 const sourceRepository = "https://github.com/aimlesx/cookidoo-openapi";
-const sourceCommit = "69bb43119b162ad8fea48ddb6a436d2074013972";
+const sourceCommit = "6d54f2a8fa79894f4b81dba4d47a52610096d503";
 const checkOnly = process.argv.slice(2).includes("--check");
 const unknownArguments = process.argv.slice(2).filter((argument) => argument !== "--check");
 if (unknownArguments.length > 0) {

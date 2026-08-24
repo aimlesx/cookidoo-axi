@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: aimlesx/cookidoo-openapi
-          ref: 69bb43119b162ad8fea48ddb6a436d2074013972
+          ref: 6d54f2a8fa79894f4b81dba4d47a52610096d503
           path: cookidoo-openapi
           persist-credentials: false
 

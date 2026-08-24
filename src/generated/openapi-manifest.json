@@ -2,9 +2,9 @@
   "generatedFrom": "cookidoo-openapi/openapi.yaml",
   "source": {
     "repository": "https://github.com/aimlesx/cookidoo-openapi",
-    "commit": "69bb43119b162ad8fea48ddb6a436d2074013972",
+    "commit": "6d54f2a8fa79894f4b81dba4d47a52610096d503",
     "path": "openapi.yaml",
-    "sha256": "d04829c9140ccba4003e0f0ce39883158e73ac8f9e42ae2c8fc365a28b1fa5aa"
+    "sha256": "89d0cd4b9e04c2844aebf5d29705f7a992606f3be20a39867e7dd1491be5678d"
   },
   "openapi": "3.1.1",
   "apiVersion": "0.2.0",
@@ -720,7 +720,7 @@
           "instructions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Instruction"
+              "$ref": "#/components/schemas/WritableInstruction"
             }
           },
           "tools": {
@@ -786,6 +786,114 @@
           }
         }
       },
+      "InstructionTextPosition": {
+        "type": "object",
+        "required": [
+          "offset",
+          "length"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "offset": {
+            "type": "number",
+            "description": "Start of the annotated span in the instruction text."
+          },
+          "length": {
+            "type": "number",
+            "description": "Length of the annotated instruction-text span."
+          }
+        }
+      },
+      "CookingTemperature": {
+        "type": "object",
+        "required": [
+          "value",
+          "unit"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "C",
+              "F"
+            ]
+          }
+        }
+      },
+      "TtsAnnotationData": {
+        "type": "object",
+        "description": "Time, temperature, and speed values preloaded by a created-recipe step.\nTime is expressed in seconds. Clockwise rotation is normally represented\nby omitting `direction`.",
+        "additionalProperties": true,
+        "properties": {
+          "time": {
+            "type": "number",
+            "description": "Duration in seconds."
+          },
+          "speed": {
+            "type": "string"
+          },
+          "temperature": {
+            "$ref": "#/components/schemas/CookingTemperature"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "CW",
+              "CCW"
+            ]
+          }
+        }
+      },
+      "TtsInstructionAnnotation": {
+        "type": "object",
+        "required": [
+          "type",
+          "data",
+          "position"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "TTS"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TtsAnnotationData"
+          },
+          "position": {
+            "$ref": "#/components/schemas/InstructionTextPosition"
+          }
+        }
+      },
+      "NonTtsInstructionAnnotation": {
+        "type": "object",
+        "description": "Forward-compatible opaque annotation other than an object with `type` equal to `TTS`.",
+        "additionalProperties": true,
+        "not": {
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "TTS"
+            }
+          }
+        }
+      },
+      "InstructionAnnotation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TtsInstructionAnnotation"
+          },
+          {
+            "$ref": "#/components/schemas/NonTtsInstructionAnnotation"
+          }
+        ]
+      },
       "Instruction": {
         "type": "object",
         "required": [
@@ -812,6 +920,51 @@
             "type": "array",
             "items": {}
           }
+        }
+      },
+      "WritableInstruction": {
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "STEP"
+          },
+          "text": {
+            "type": "string"
+          },
+          "annotations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstructionAnnotation"
+            }
+          },
+          "missedUsages": {
+            "type": "array",
+            "items": {}
+          }
+        },
+        "example": {
+          "type": "STEP",
+          "text": "Miksuj 2 s / obr. 6.",
+          "annotations": [
+            {
+              "type": "TTS",
+              "data": {
+                "time": 2,
+                "speed": "6"
+              },
+              "position": {
+                "offset": 7,
+                "length": 12
+              }
+            }
+          ],
+          "missedUsages": []
         }
       },
       "MoveRecipe": {
@@ -2812,7 +2965,7 @@
               "instructions": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/Instruction"
+                  "$ref": "#/components/schemas/WritableInstruction"
                 }
               },
               "tools": {

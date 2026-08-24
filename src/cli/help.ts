@@ -354,6 +354,18 @@ export function operationHelp(operation: OperationDescriptor): string {
   const headerRows = headerParameters.flatMap((parameter) =>
     parameterRows(parameter.name, parameter.schema, "set automatically", parameter.description));
   const bodyRows = requestBodyRows(operation);
+  if (operation.operationId === "patchCreatedRecipe") {
+    bodyRows.push(
+      "  --infer-thermomix-settings",
+      "    Friendly created-update only: infer tappable presets from exact Polish fragments",
+      "    such as 2 s/obr. 6, 40 s/obr. 8, or 5 min/80°C/obr. 3.",
+      "    Replaces TTS only on matched STEP spans; preserves unrelated TTS and non-TTS data.",
+      "    Requires instructions in this request; rejects Varoma, ranges, modes, and no matches.",
+      "    Local inference subset: positive time, 1-160°C, speed 0-10; not provider limits.",
+      "    Bounded to 32 settings per STEP, 128 per request, and a 1 MB transformed body.",
+      "    TTS spans use JavaScript UTF-16 indexes; verify steps containing emoji/non-BMP text.",
+    );
+  }
   const requestMedia = operation.requestBody ? Object.keys(operation.requestBody.content).join(", ") : "none";
   const policy = effectiveSafetyPolicy(operation);
   const safetyRows = safetyHelpRows(policy);

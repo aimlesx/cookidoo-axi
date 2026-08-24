@@ -148,7 +148,7 @@ test("shipped notice preserves source provenance and third-party rights boundary
   const sourceMarker = noticeLines.indexOf("`cookidoo-openapi` project at");
   assert.ok(sourceMarker >= 0);
   assert.equal(noticeLines[sourceMarker + 1], "https://github.com/aimlesx/cookidoo-openapi, commit");
-  assert.match(notice, /69bb43119b162ad8fea48ddb6a436d2074013972/u);
+  assert.match(notice, /6d54f2a8fa79894f4b81dba4d47a52610096d503/u);
   assert.match(notice, /MIT License in `LICENSE` applies only to the `cookidoo-axi` software/u);
   assert.match(notice, /grants no rights to Cookidoo, Thermomix, or Vorwerk trademarks/u);
   assert.match(notice, /does not\s+license Cookidoo responses, recipes, media, user content, or databases/u);
