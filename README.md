@@ -8,7 +8,7 @@ output, and mutation safety in front of the transport.
 It is not affiliated with or supported by Vorwerk, Thermomix, or Cookidoo. Use
 it only with accounts and resources you are authorized to access.
 
-The current `0.1.0-beta.2` line is a Homebrew-distributed beta for Apple
+The current `0.1.0-beta.3` line is a Homebrew-distributed beta for Apple
 Silicon (arm64), tested on macOS 15, and scoped to the Polish Cookidoo
 platform. Treat its API and output contract as pre-stable until a later
 non-prerelease version. Intel Macs, older macOS releases, and other Cookidoo
