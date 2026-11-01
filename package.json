@@ -63,7 +63,7 @@
     "tough-cookie": "6.0.2"
   },
   "devDependencies": {
-    "@toon-format/spec": "4.1.1",
+    "@toon-format/spec": "4.4.0",
     "@types/node": "24.13.3",
     "typescript": "5.9.3",
     "yaml": "2.9.0"
